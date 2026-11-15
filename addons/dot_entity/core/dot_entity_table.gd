@@ -61,6 +61,12 @@ const REASON_ORPHANED := &"orphaned"  ## Its node was freed without telling the 
 ## [method sweep] once per tick or once per round instead.
 var auto_sweep: bool = false
 
+## The most serials one kind may hand out, and a setting. [code]0[/code] means the id
+## format's own ceiling, [constant DotEntity.SERIAL_MAX]; the default is that ceiling, so
+## nothing changes unless a game lowers it. Set it with [method set_serial_limit], which
+## refuses a value above the ceiling instead of clamping it.
+var serial_limit: int = DotEntity.SERIAL_MAX
+
 ## id -> [DotEntityHandle].
 var _by_id: Dictionary = {}
 
@@ -81,6 +87,22 @@ var _next_serial: Dictionary = {}
 var _opened_total: int = 0
 
 
+## Sets [member serial_limit]. [code]0[/code] means [constant DotEntity.SERIAL_MAX]. Fails
+## with [constant DotError.CODE_INVALID], changing nothing, for a negative value or one the
+## id layout cannot hold.
+func set_serial_limit(limit: int) -> DotResult:
+	if limit < 0 or limit > DotEntity.SERIAL_MAX:
+		return DotResult.fail(
+			DotError.CODE_INVALID,
+			"The serial limit must be 0 (unlimited) or at most %d." % DotEntity.SERIAL_MAX,
+			"limit=%d" % limit
+		)
+
+	serial_limit = limit if limit > 0 else DotEntity.SERIAL_MAX
+
+	return DotResult.success(serial_limit)
+
+
 ## Puts an entity into the table and gives it an id.
 ##
 ## [param key] is the game's own name for it, and may be empty. [param now] is
@@ -97,7 +119,7 @@ func open(
 	key: StringName = &"",
 	now: float = 0.0
 ) -> DotResult:
-	if kind <= DotEntity.KIND_NONE or kind > DotEntity.KIND_MAX:
+	if kind <= DotEntity.KIND_NONE or kind > DotEntity.kind_limit:
 		return DotResult.fail(
 			DotError.CODE_INVALID,
 			"That is not an entity kind.",
@@ -133,14 +155,14 @@ func open(
 
 	var serial := int(_next_serial.get(kind, 1))
 
-	if serial > DotEntity.SERIAL_MAX:
+	if serial > serial_limit:
 		# Reachable only after a trillion spawns of one kind, which is decades of a
 		# busy server -- but "unreachable" is what every id scheme in this tree
 		# assumed, and one of them was wrong within a single map. A refusal a caller
 		# can see beats a silent wrap onto live ids.
 		DotLog.error(CHANNEL, "entity serials exhausted for a kind", {
 			"kind": String(DotEntity.kind_name(kind)),
-			"max": DotEntity.SERIAL_MAX,
+			"max": serial_limit,
 		})
 
 		return DotResult.fail(
@@ -420,7 +442,7 @@ func handles_of_owner(owner_id: StringName) -> Array[DotEntityHandle]:
 func describe() -> Dictionary:
 	var by_kind := {}
 
-	for kind in range(DotEntity.KIND_NONE + 1, DotEntity.KIND_MAX + 1):
+	for kind in range(DotEntity.KIND_NONE + 1, DotEntity.kind_limit + 1):
 		var n := count_of_kind(kind)
 
 		if n > 0:

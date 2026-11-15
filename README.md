@@ -32,7 +32,14 @@ The kinds are `KIND_PLAYER`, `KIND_NPC`, `KIND_VEHICLE`, `KIND_PROP`, `KIND_PROJ
 
 ## Limits
 
-These come from the id layout and are not settings. There are 8 kinds, and each kind has up to 10^12 serials (`DotEntity.STRIDE`). Opening an entity of a kind with no serials left fails with `DotError.CODE_QUOTA`. A game that needs more kinds uses `KIND_OTHER` and keeps its own sub-kinds.
+The id layout is fixed: `id = kind * 10^12 + serial`. Inside it, the limits are settings. The defaults are the old values, so a game that sets nothing behaves as before. `0` means the largest value the layout holds. A value the layout cannot hold, or a negative one, is refused with `DotError.CODE_INVALID` and changes nothing. Nothing is clamped.
+
+| Setting | Set with | Default | `0` means | Refused when |
+| --- | --- | --- | --- | --- |
+| `DotEntity.kind_limit`, the highest kind | `DotEntity.set_kind_limit(n)` | 8 | 9 223 371, the most kinds an `int64` id holds | below 8, or above 9 223 371 |
+| `DotEntityTable.serial_limit`, serials per kind | `table.set_serial_limit(n)` | 999 999 999 999 (10^12 - 1) | the same ceiling | above 10^12 - 1 |
+
+Kinds 9 and up are the game's own. Name them with `DotEntity.register_kind(kind, name)`, or they read as `kind9` in logs. Ids of kinds 1..8 are unchanged, so peers that disagree about `kind_limit` still agree about every id they share. Opening a kind above the limit fails with `CODE_INVALID`. Opening past `serial_limit` fails with `DotError.CODE_QUOTA` and never wraps.
 
 ## The table
 

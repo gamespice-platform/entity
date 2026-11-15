@@ -32,7 +32,7 @@ The family's two steps ([family CLAUDE.md](../../CLAUDE.md#validating-anything))
 
 - Kinds are plain `int` constants, not an enum; the numbers are part of the wire format. [design](docs/design.md#the-layout-and-what-is-load-bearing)
 - Zero is never a kind: dot-combat reads attacker 0 as "no attacker". [design](docs/design.md#the-layout-and-what-is-load-bearing)
-- Serials are never reused; exhaustion refuses with `CODE_QUOTA`, never wraps. [design](docs/design.md#the-layout-and-what-is-load-bearing)
+- Serials are never reused; exhaustion (`serial_limit`, default 10^12 - 1, 0 = format ceiling) refuses with `CODE_QUOTA`, never wraps. `kind_limit` defaults to 8, 0 = 9223371; both refuse bad values rather than clamp. [design](docs/design.md#the-layout-and-what-is-load-bearing)
 - A new kind is a constant plus a `KIND_NAMES` entry; the suite checks both. [design](docs/design.md#the-layout-and-what-is-load-bearing)
 - `open()` before the node is in the tree is normal; keep the `is_inside_tree()` guard in `position()` and `position_2d()`. [design](docs/design.md#positions-before-the-node-is-in-the-tree)
 - `close()` frees nothing: close, then free. [design](docs/design.md#lifetimes-close-then-free-then-sweep)

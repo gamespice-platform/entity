@@ -4,14 +4,14 @@ Why the id space is shaped the way it is, what is deliberately not built yet, an
 
 ## The layout, and what is load-bearing
 
-`id = kind * STRIDE + serial`, `STRIDE = 1e12`, kinds 1..8, zero reserved.
+`id = kind * STRIDE + serial`, `STRIDE = 1e12`, kinds 1..8 by default (`DotEntity.kind_limit`, a setting), zero reserved.
 
 Four things about it are decisions rather than details, and each has a comment at its definition:
 
 1. **Kind constants are plain `int`s, not an `enum`.** The kind is multiplied into an id and sent over the wire inside that id. An enum invites `KIND_X as int` at every boundary and buys nothing; the numbers are part of the format, so they are written as numbers.
 2. **Zero is not a kind.** dot-combat reads `attacker == 0` as "no attacker" (`DotDamage`) and every game depends on it.
 3. **The stride is decimal.** These numbers are read by people, not decoded by machines. `2000000000041` is visibly `npc#41`.
-4. **Serials are never reused, per kind.** A stale id is absent rather than wrong. `open()` refuses with `CODE_QUOTA` after a trillion of one kind rather than wrapping onto live ids: reachable only after decades, but "unreachable" is what every scheme it replaced assumed, and one of them was wrong inside a single map ([history](history.md)).
+4. **Serials are never reused, per kind.** A stale id is absent rather than wrong. `open()` refuses with `CODE_QUOTA` after `serial_limit` (default a trillion) of one kind rather than wrapping onto live ids: reachable only after decades, but "unreachable" is what every scheme it replaced assumed, and one of them was wrong inside a single map ([history](history.md)).
 
 `KIND_NAMES` is indexed by kind rather than matched, so adding a kind is one line in two adjacent places instead of two edits in two files. The suite asserts every kind round-trips *and* has a name, which is what catches the half-done addition.
 

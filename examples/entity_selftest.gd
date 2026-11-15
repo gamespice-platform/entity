@@ -37,7 +37,7 @@ extends Node
 ## Every check this suite runs, including the one that compares against it. The section
 ## counter cannot see a section that aborted after announcing itself — its remaining checks
 ## simply never run — and a total can. See docs/testing.md.
-const CHECKS := 115
+const CHECKS := 138
 
 var _entered := 0
 var _completed := 0
@@ -69,6 +69,7 @@ func _run() -> void:
 	_test_ownership()
 	_test_the_sweep()
 	_test_describe()
+	_test_limits()
 
 	_teardown()
 
@@ -598,6 +599,54 @@ func _test_describe() -> void:
 	_check(String(hd["id"]) == DotEntity.describe_id(handle.id), "a handle describes its id")
 	_check(String(hd["kind"]) == "vehicle", "and its kind by name")
 	_check(bool(hd["alive"]), "and whether it is alive")
+
+	_done()
+
+
+# --- 8. The limits are settings ---------------------------------------------
+
+func _test_limits() -> void:
+	_section("the kind and serial limits are settings with the old values as defaults")
+
+	_check(DotEntity.kind_limit == 8 and DotEntity.KIND_MAX == 8, "the kind limit defaults to 8")
+	var fresh := DotEntityTable.new()
+	_check(fresh.serial_limit == DotEntity.SERIAL_MAX, "the serial limit defaults to 10^12 - 1")
+
+	# A lowered serial limit refuses loudly, uses no id and wraps nothing.
+	var small := DotEntityTable.new()
+	_check(small.set_serial_limit(2).ok, "a serial limit can be lowered")
+	_check(small.open(DotEntity.KIND_PROP, _node("s1")).ok, "serial 1 opens")
+	_check(small.open(DotEntity.KIND_PROP, _node("s2")).ok, "serial 2 opens")
+	var over := small.open(DotEntity.KIND_PROP, _node("s3"))
+	_check(not over.ok and over.code() == DotError.CODE_QUOTA, "serial 3 is refused with CODE_QUOTA, not clamped")
+	_check(small.open(DotEntity.KIND_NPC, _node("s4")).ok, "and the limit is per kind")
+
+	_check(small.set_serial_limit(0).ok and small.serial_limit == DotEntity.SERIAL_MAX, "0 means the format ceiling")
+	_check(not small.set_serial_limit(DotEntity.SERIAL_MAX + 1).ok, "above the format ceiling is refused")
+	_check(not small.set_serial_limit(-1).ok and small.serial_limit == DotEntity.SERIAL_MAX, "negative is refused and changes nothing")
+
+	# More kinds, with the same id format.
+	_check(DotEntity.make_id(9, 1) == 0, "kind 9 is not a kind by default")
+	_check(not DotEntity.set_kind_limit(7).ok, "a limit below the built-in kinds is refused")
+	_check(not DotEntity.set_kind_limit(DotEntity.KIND_FORMAT_MAX + 1).ok, "a limit the format cannot hold is refused")
+	_check(DotEntity.kind_limit == 8, "refusals change nothing")
+
+	_check(DotEntity.set_kind_limit(20).ok, "the kind limit can be raised")
+	var id := DotEntity.make_id(9, 5)
+	_check(id == 9 * DotEntity.STRIDE + 5 and DotEntity.kind_of(id) == 9 and DotEntity.serial_of(id) == 5, "a raised kind uses the same layout")
+	_check(DotEntity.kind_name(9) == &"kind9", "an unnamed raised kind has a generated name")
+	_check(DotEntity.register_kind(9, &"boss").ok and DotEntity.describe_id(id) == "boss#5", "a registered name is used")
+	_check(not DotEntity.register_kind(3, &"x").ok and not DotEntity.register_kind(21, &"x").ok, "built-in and out-of-range kinds cannot be registered")
+	var t2 := DotEntityTable.new()
+	_check(t2.open(20, _node("k20")).ok and not t2.open(21, _node("k21")).ok, "a table opens up to the limit and refuses beyond")
+
+	_check(DotEntity.set_kind_limit(0).ok and DotEntity.kind_limit == DotEntity.KIND_FORMAT_MAX, "0 means the format ceiling")
+	var top := DotEntity.make_id(DotEntity.KIND_FORMAT_MAX, DotEntity.SERIAL_MAX)
+	_check(top > 0 and DotEntity.kind_of(top) == DotEntity.KIND_FORMAT_MAX, "the ceiling still fits an int64")
+
+	DotEntity.set_kind_limit(DotEntity.KIND_MAX)
+	DotEntity._extra_names.clear()
+	_check(DotEntity.kind_of(id) == DotEntity.KIND_NONE, "restoring the default hides the raised kinds again")
 
 	_done()
 

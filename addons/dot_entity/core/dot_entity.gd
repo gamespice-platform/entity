@@ -57,8 +57,24 @@ const KIND_OBJECTIVE := 6   ## A bomb, a cart, a flag — a thing a round is abo
 const KIND_TRIGGER := 7     ## A volume that reports rather than collides.
 const KIND_OTHER := 8    ## A game's own kind. Nothing here interprets it.
 
-## The highest kind this layout has room for. See [constant STRIDE].
+## The highest built-in kind: the default of [member kind_limit]. See [constant STRIDE].
 const KIND_MAX := 8
+
+## The highest kind the id layout can hold at all, whatever [member kind_limit] says: the
+## largest kind for which [code]kind * STRIDE + SERIAL_MAX[/code] still fits an [code]int64[/code].
+const KIND_FORMAT_MAX := 9_223_371
+
+## The highest kind in use, and a setting: [code]0[/code] means [constant KIND_FORMAT_MAX].
+##
+## [b]Default 8, the built-in kinds.[/b] A game that wants kinds of its own raises it
+## with [method set_kind_limit] once at startup, names them with [method register_kind],
+## and the ids stay byte-for-byte compatible: the stride and the meaning of kinds 1..8
+## do not change. [method set_kind_limit] refuses a value the format cannot hold rather
+## than clamping it.
+static var kind_limit: int = KIND_MAX
+
+## Names for kinds above [constant KIND_MAX], registered by the game.
+static var _extra_names: Dictionary = {}
 
 ## Short names, for logs and for [method describe_id].
 ##
@@ -87,18 +103,55 @@ const KIND_NAMES: Array[StringName] = [
 ## actually looked at.
 ##
 ## A trillion serials per kind is 31 years at a thousand spawns a second, and
-## [constant KIND_MAX] kinds fit inside an [code]int64[/code] with four orders of
-## magnitude to spare. Exhaustion is still handled rather than assumed: see
+## the default eight kinds fit inside an [code]int64[/code] with four orders of
+## magnitude to spare ([constant KIND_FORMAT_MAX] is the hard ceiling). Exhaustion is still handled rather than assumed: see
 ## [method DotEntityTable.open].
 const STRIDE := 1_000_000_000_000
 
-## The largest serial a kind can hold.
+## The largest serial a kind can hold. The format ceiling; a table can set a lower
+## limit with [member DotEntityTable.serial_limit], never a higher one.
 const SERIAL_MAX := STRIDE - 1
+
+
+## Sets [member kind_limit]. [code]0[/code] means [constant KIND_FORMAT_MAX]. Fails with
+## [constant DotError.CODE_INVALID], and changes nothing, for a negative value, one below
+## [constant KIND_MAX] (a built-in kind would become unusable) or one the layout cannot hold.
+static func set_kind_limit(limit: int) -> DotResult:
+	if limit == 0:
+		kind_limit = KIND_FORMAT_MAX
+		return DotResult.success(kind_limit)
+
+	if limit < KIND_MAX or limit > KIND_FORMAT_MAX:
+		return DotResult.fail(
+			DotError.CODE_INVALID,
+			"The kind limit must be 0 (unlimited) or between %d and %d." % [KIND_MAX, KIND_FORMAT_MAX],
+			"limit=%d" % limit
+		)
+
+	kind_limit = limit
+
+	return DotResult.success(kind_limit)
+
+
+## Names a kind above [constant KIND_MAX] for logs and [method describe_id]. Fails with
+## [constant DotError.CODE_INVALID] for a built-in kind, a kind beyond [member kind_limit]
+## or an empty name.
+static func register_kind(kind: int, kind_name: StringName) -> DotResult:
+	if kind <= KIND_MAX or kind > kind_limit or kind_name == &"":
+		return DotResult.fail(
+			DotError.CODE_INVALID,
+			"A registered kind must be above %d, within the kind limit, and named." % KIND_MAX,
+			"kind=%d limit=%d" % [kind, kind_limit]
+		)
+
+	_extra_names[kind] = kind_name
+
+	return DotResult.success(kind)
 
 
 ## The id for a kind and a serial. The only place the layout is spelled out.
 static func make_id(kind: int, serial: int) -> int:
-	if kind <= KIND_NONE or kind > KIND_MAX or serial <= 0 or serial > SERIAL_MAX:
+	if kind <= KIND_NONE or kind > kind_limit or serial <= 0 or serial > SERIAL_MAX:
 		return 0
 
 	return kind * STRIDE + serial
@@ -116,7 +169,7 @@ static func kind_of(id: int) -> int:
 	@warning_ignore("integer_division")
 	var kind := id / STRIDE
 
-	return kind if kind <= KIND_MAX else KIND_NONE
+	return kind if kind <= kind_limit else KIND_NONE
 
 
 ## The serial within its kind. Unique for the life of one [DotEntityTable].
@@ -141,7 +194,13 @@ static func is_valid(id: int) -> bool:
 
 ## The short name of a kind: [code]"npc"[/code].
 static func kind_name(kind: int) -> StringName:
-	return KIND_NAMES[kind] if kind >= 0 and kind < KIND_NAMES.size() else &"?"
+	if kind >= 0 and kind < KIND_NAMES.size():
+		return KIND_NAMES[kind]
+
+	if kind > KIND_MAX and kind <= kind_limit:
+		return _extra_names.get(kind, StringName("kind%d" % kind))
+
+	return &"?"
 
 
 ## An id as a person reads it: [code]"npc#41"[/code].
