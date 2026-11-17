@@ -180,7 +180,7 @@ func _test_allocation() -> void:
 	_check(table.count() == 200, "the table holds all of them (%d)" % table.count())
 	_check(table.count_of_kind(DotEntity.KIND_NPC) == 100, "and counts them by kind")
 
-	# The property the old schemes did not have. Arena derived a monster's id from
+	# The property the old schemes did not have. FC derived a monster's id from
 	# `instance_id % 1_000_000`, so two nodes a million apart collided and one lost
 	# its health registration with no error anywhere.
 	var serials := table.ids_of_kind(DotEntity.KIND_NPC).map(
