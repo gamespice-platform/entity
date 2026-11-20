@@ -263,7 +263,7 @@ func close_owner(owner_id: StringName, reason: StringName = REASON_OWNER_LEFT) -
 ## A scene reload, a [code]queue_free[/code] on a parent, or a round reset frees nodes
 ## without anybody calling [method close] — and the table then holds a handle, a health
 ## record and a hitbox set for something that has not existed since the last map. The
-## per-entity dictionaries in dot-combat have the same shape and the same exposure.
+## per-entity dictionaries in GameSpice Combat have the same shape and the same exposure.
 ##
 ## Returns how many it closed, and warns when that is not zero: an orphan is recoverable
 ## but it means a despawn path somewhere is not calling [method close].

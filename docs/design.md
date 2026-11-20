@@ -1,4 +1,4 @@
-# dot-entity design
+# GameSpice Entity design
 
 Why the id space is shaped the way it is, what is deliberately not built yet, and why it is its own repository. The one-line rules are in [CLAUDE.md](../CLAUDE.md).
 
@@ -9,7 +9,7 @@ Why the id space is shaped the way it is, what is deliberately not built yet, an
 Four things about it are decisions rather than details, and each has a comment at its definition:
 
 1. **Kind constants are plain `int`s, not an `enum`.** The kind is multiplied into an id and sent over the wire inside that id. An enum invites `KIND_X as int` at every boundary and buys nothing; the numbers are part of the format, so they are written as numbers.
-2. **Zero is not a kind.** dot-combat reads `attacker == 0` as "no attacker" (`DotDamage`) and every game depends on it.
+2. **Zero is not a kind.** GameSpice Combat reads `attacker == 0` as "no attacker" (`DotDamage`) and every game depends on it.
 3. **The stride is decimal.** These numbers are read by people, not decoded by machines. `2000000000041` is visibly `npc#41`.
 4. **Serials are never reused, per kind.** A stale id is absent rather than wrong. `open()` refuses with `CODE_QUOTA` after `serial_limit` (default a trillion) of one kind rather than wrapping onto live ids: reachable only after decades, but "unreachable" is what every scheme it replaced assumed, and one of them was wrong inside a single map ([history](history.md)).
 
@@ -29,7 +29,7 @@ A node freed without `close()` leaks a handle for the life of the process, becau
 
 ## The second layer, designed and not built
 
-dot-props, dot-npc and dot-vehicle have each independently grown the same six-file set: `def` / `catalogue` / `limits` / `instance` / `spawner` / `net_sync`.
+GameSpice Props, GameSpice NPC and GameSpice Vehicle have each independently grown the same six-file set: `def` / `catalogue` / `limits` / `instance` / `spawner` / `net_sync`.
 
 - The three `*Instance` records share `node`, `instance_id`, `owner_id`, `spawned_at` and `alive`, and all three carry the same paragraph about why `alive` cannot be `is_instance_valid`. `DotEntityHandle` holds that half, but none of the three extends or uses it yet.
 - `dot_npc_limits.gd` and `dot_prop_limits.gd` differ mostly in prose.
@@ -40,10 +40,10 @@ A `DotEntityDef` / `DotEntityCatalogue` / `DotEntityLimits` / `DotEntitySpawner`
 
 The behaviour half stays where it is regardless. An NPC thinks, a vehicle has seats, a prop is held; none of that is common and none of it should move.
 
-## Why this is its own repository and not part of dot-core
+## Why this is its own repository and not part of GameSpice Core
 
-It very nearly was. dot-core is linked in every project, so putting the table there would cost no new dependency edge, and the argument for that is real.
+It very nearly was. GameSpice Core is linked in every project, so putting the table there would cost no new dependency edge, and the argument for that is real.
 
-Against it: dot-core is the foundation (logging, platform capabilities, paths, transports, randomness) and none of it knows what a game is. An entity table is a runtime game concept with a lifetime tied to a match. Putting it in dot-core would be the first thing there that only a game uses.
+Against it: GameSpice Core is the foundation (logging, platform capabilities, paths, transports, randomness) and none of it knows what a game is. An entity table is a runtime game concept with a lifetime tied to a match. Putting it in GameSpice Core would be the first thing there that only a game uses.
 
 If dot-combat, dot-effects or dot-net ever need the handle *without* taking a dot-entity dependency, that argument flips and `DotEntity` plus `DotEntityTable` move to dot-core. They are two files with no dependencies of their own, which is the shape that makes such a move cheap; keep it that way.

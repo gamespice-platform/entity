@@ -1,8 +1,8 @@
 [![Entity - GameSpice addon](docs/banner.png)](https://moddingcommunity.com/a/61-gs-entity)
 
-One shared id for every world object, for Godot 4.7+. It hands out the integer ids that other addons, such as dot-combat, use to key their records, and it keeps two lookups: node to id, and your own key to id. Part of the [dot-*](https://github.com/gamespice-platform) family. It needs only [dot-core](https://github.com/gamespice-platform/core).
+One shared id for every world object, for Godot 4.7+. It hands out the integer ids that other addons, such as dot-combat, use to key their records, and it keeps two lookups: node to id, and your own key to id. Part of the [GameSpice](https://github.com/gamespice-platform) family. It needs only [GameSpice Core](https://github.com/gamespice-platform/core).
 
-Before this addon, each game invented its own ids. One used the peer id for players and a hash of the engine instance id for monsters. Two monsters could collide in silence, and the loser then stopped taking damage. dot-entity is the one allocator that cannot collide.
+Before this addon, each game invented its own ids. One used the peer id for players and a hash of the engine instance id for monsters. Two monsters could collide in silence, and the loser then stopped taking damage. GameSpice Entity is the one allocator that cannot collide.
 
 ## Install
 
@@ -27,7 +27,7 @@ DotEntity.describe_id(id)                      # "npc#41"
 | --- | --- |
 | An id carries its own kind. | The common question is "what sort of thing is this", for a kill feed, a friendly-fire rule or a spectator. It is one division, not a range check. |
 | The stride is decimal. | People read these numbers in logs and bug reports, and `2000000000041` is visibly the forty-first NPC. |
-| Zero is reserved. | dot-combat reads `0` as "no attacker" (a fall, the world). Nothing can allocate it. |
+| Zero is reserved. | GameSpice Combat reads `0` as "no attacker" (a fall, the world). Nothing can allocate it. |
 | Serials are never reused. | An id for a dead entity is absent from the table for the life of the process, so a stale id finds nothing instead of somebody else. |
 
 The kinds are `KIND_PLAYER`, `KIND_NPC`, `KIND_VEHICLE`, `KIND_PROP`, `KIND_PROJECTILE`, `KIND_OBJECTIVE`, `KIND_TRIGGER` and `KIND_OTHER`. `KIND_OTHER` is for a game's own kind.
@@ -65,7 +65,7 @@ combat.forget(handle.id)
 | Lookup | Use |
 | --- | --- |
 | `id_for_node(node)` | A trace returns a `Node` and damage is keyed by id, so this runs for every pellet. |
-| `id_for_key(&"u123")` | Your game names players its own way, and dot-combat keys by int. |
+| `id_for_key(&"u123")` | Your game names players its own way, and GameSpice Combat keys by int. |
 | `key_for_id(id)` | The inverse. It is looked up and stored, never rebuilt from a formula. |
 
 `sweep()` closes every handle whose node was freed without a `close()`, for example after a scene reload. It returns how many it closed and warns when that is more than zero, because it means a despawn path is not calling `close()`.
@@ -85,7 +85,7 @@ There is no base class for entities, because this family keeps state in a record
 | game-airdrift | `"u123"` parsed to `123`, one function doing two jobs. |
 | game-playlot | A counter in one layer and a name hash in another, so one player had two ids. |
 
-The client shell in dot-server-deploy links it as well. A delivered game pack resolves addon `class_name`s against the host build, so an addon a game uses must be in that list.
+The client shell in GameSpice Server Deploy links it as well. A delivered game pack resolves addon `class_name`s against the host build, so an addon a game uses must be in that list.
 
 ## Test
 

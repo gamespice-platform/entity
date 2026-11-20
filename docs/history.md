@@ -1,4 +1,4 @@
-# dot-entity history
+# GameSpice Entity history
 
 ## Why it exists: every game invented its own entity id
 

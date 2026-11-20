@@ -1,7 +1,7 @@
 @tool
 extends EditorPlugin
 
-## Editor entry point for dot-entity. It registers nothing, and that is correct.
+## Editor entry point for GameSpice Entity. It registers nothing, and that is correct.
 ##
 ## [b]Everything in this addon is a plain object a game owns.[/b] A [DotEntityTable] is
 ## not a [Node] and not an autoload: a table belongs to one game, and a process running

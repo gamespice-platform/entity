@@ -7,8 +7,8 @@ extends RefCounted
 ## [b]The record is kept beside the node, never on it.[/b] Metadata on a node is
 ## invisible to anything that did not put it there, survives into a saved scene, and is
 ## unreachable the moment the node is freed — and the moment an entity's record matters
-## most is the tick it dies on, which is the tick its node goes away. dot-props,
-## dot-npc and dot-vehicle each arrived at this independently and each wrote the
+## most is the tick it dies on, which is the tick its node goes away. GameSpice Props,
+## GameSpice NPC and GameSpice Vehicle each arrived at this independently and each wrote the
 ## paragraph; this is the one copy.
 ##
 ## [b]This is the common half only.[/b] A prop is held, an NPC thinks, a vehicle has
@@ -47,7 +47,7 @@ var owner_id: StringName = &""
 ##
 ## [b]The bridge between two id spaces, and the reason it is a field rather than a
 ## convention.[/b] A game keys its players by something of its own — a
-## [code]"u123"[/code] userid, a peer id, a roster slot — and dot-combat keys by int.
+## [code]"u123"[/code] userid, a peer id, a roster slot — and GameSpice Combat keys by int.
 ## Every game that met this gap closed it by reconstructing one from the other, and the
 ## one that wrote the reconstruction down warned about it in a comment: a caller that
 ## hashes the name produces a number that is stable, plausible, and not the one the

@@ -1,10 +1,10 @@
-# dot-entity
+# GameSpice Entity
 
-The id space every world object shares. `DotEntity` packs a kind and a serial into one `int` (`id = kind * STRIDE + serial`), `DotEntityTable` hands out ids that are never reused and maps them to nodes, keys and owners, and `DotEntityHandle` is one open entity. dot-combat, dot-net and the games key by these ids.
+The id space every world object shares. `DotEntity` packs a kind and a serial into one `int` (`id = kind * STRIDE + serial`), `DotEntityTable` hands out ids that are never reused and maps them to nodes, keys and owners, and `DotEntityHandle` is one open entity. GameSpice Combat, GameSpice Net and the games key by these ids.
 
 Read the family [CLAUDE.md](../../CLAUDE.md) and [godot/NOTES.md](../NOTES.md) first.
 
-**The distributable is `addons/dot_entity/`.** It requires [dot-core](../dot-core) and nothing else (`ln -s ../../dot-core/addons/dot_core addons/dot_core`, gitignored).
+**The distributable is `addons/dot_entity/`.** It requires [GameSpice Core](../dot-core) and nothing else (`ln -s ../../dot-core/addons/dot_core addons/dot_core`, gitignored).
 
 ## Read before
 
@@ -31,15 +31,15 @@ The family's two steps ([family CLAUDE.md](../../CLAUDE.md#validating-anything))
 ## Rules that bite
 
 - Kinds are plain `int` constants, not an enum; the numbers are part of the wire format. [design](docs/design.md#the-layout-and-what-is-load-bearing)
-- Zero is never a kind: dot-combat reads attacker 0 as "no attacker". [design](docs/design.md#the-layout-and-what-is-load-bearing)
+- Zero is never a kind: GameSpice Combat reads attacker 0 as "no attacker". [design](docs/design.md#the-layout-and-what-is-load-bearing)
 - Serials are never reused; exhaustion (`serial_limit`, default 10^12 - 1, 0 = format ceiling) refuses with `CODE_QUOTA`, never wraps. `kind_limit` defaults to 8, 0 = 9223371; both refuse bad values rather than clamp. [design](docs/design.md#the-layout-and-what-is-load-bearing)
 - A new kind is a constant plus a `KIND_NAMES` entry; the suite checks both. [design](docs/design.md#the-layout-and-what-is-load-bearing)
 - `open()` before the node is in the tree is normal; keep the `is_inside_tree()` guard in `position()` and `position_2d()`. [design](docs/design.md#positions-before-the-node-is-in-the-tree)
 - `close()` frees nothing: close, then free. [design](docs/design.md#lifetimes-close-then-free-then-sweep)
 - A node freed without `close()` leaks until `sweep()`; call it once per tick or round. `auto_sweep` stays off by default. [design](docs/design.md#lifetimes-close-then-free-then-sweep)
 - `count()` and `ids()` honour `auto_sweep`; the per-kind and handle listings deliberately do not. [design](docs/design.md#lifetimes-close-then-free-then-sweep)
-- `DotEntity` and `DotEntityTable` depend on nothing but dot-core; keep them movable. [design](docs/design.md#why-this-is-its-own-repository-and-not-part-of-dot-core)
+- `DotEntity` and `DotEntityTable` depend on nothing but GameSpice Core; keep them movable. [design](docs/design.md#why-this-is-its-own-repository-and-not-part-of-dot-core)
 
 ## Open items
 
-- The shared def / catalogue / limits / spawner base for dot-props, dot-npc and dot-vehicle is designed and not built, and their `*Instance` records do not use `DotEntityHandle` yet. It lands as one pass across the three addons. [design](docs/design.md#the-second-layer-designed-and-not-built)
+- The shared def / catalogue / limits / spawner base for GameSpice Props, GameSpice NPC and GameSpice Vehicle is designed and not built, and their `*Instance` records do not use `DotEntityHandle` yet. It lands as one pass across the three addons. [design](docs/design.md#the-second-layer-designed-and-not-built)

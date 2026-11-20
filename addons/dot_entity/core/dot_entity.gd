@@ -43,7 +43,7 @@ extends RefCounted
 ## casts at every one of those boundaries and buys nothing back. The numbers are part
 ## of the format, so they are written down as numbers.
 ##
-## [b]Zero is not a kind, and nothing may allocate it.[/b] dot-combat already treats
+## [b]Zero is not a kind, and nothing may allocate it.[/b] GameSpice Combat already treats
 ## [code]entity_id == 0[/code] as "no attacker" — a fall, drowning, the world — and
 ## every game in the tree relies on that. Reserving it here keeps that meaning true by
 ## construction rather than by everybody remembering.

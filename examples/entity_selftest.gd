@@ -1,6 +1,6 @@
 extends Node
 
-## dot-entity: the id layout, the allocator, both reverse indexes, and every way a
+## GameSpice Entity: the id layout, the allocator, both reverse indexes, and every way a
 ## handle can go stale.
 ##
 ## [b]What this suite is really for.[/b] The thing it exercises replaces four
@@ -114,7 +114,7 @@ func _test_the_layout() -> void:
 		DotEntity.describe_id(id)
 	)
 
-	# Zero is dot-combat's "no attacker" and nothing may ever collide with it.
+	# Zero is GameSpice Combat's "no attacker" and nothing may ever collide with it.
 	_check(DotEntity.kind_of(0) == DotEntity.KIND_NONE, "zero is not a kind")
 	_check(not DotEntity.is_valid(0), "zero is not a valid id")
 	_check(DotEntity.describe_id(0) == "none", "zero describes as none")
@@ -298,7 +298,7 @@ func _test_the_key_index() -> void:
 	var table := DotEntityTable.new()
 
 	# The gap every game closed by hand: a game keys players by something of its own
-	# and dot-combat keys by int.
+	# and GameSpice Combat keys by int.
 	var handle: DotEntityHandle = table.open(
 		DotEntity.KIND_PLAYER, _node("P"), &"", &"u123"
 	).value
@@ -504,7 +504,7 @@ func _test_the_sweep() -> void:
 
 	# The leak this addon is most likely to grow: a scene reload or a queue_free on a
 	# parent frees nodes without anybody calling close(), and the table then holds a
-	# record -- and dot-combat a health and a hitbox set -- for something that has not
+	# record -- and GameSpice Combat a health and a hitbox set -- for something that has not
 	# existed since the last map.
 	for n in doomed:
 		n.free()
