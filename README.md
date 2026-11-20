@@ -1,4 +1,4 @@
-[![Entity - GameSpice addon](docs/banner.png)](https://moddingcommunity.com/a/257-dot-entity)
+[![Entity - GameSpice addon](docs/banner.png)](https://moddingcommunity.com/a/61-gs-entity)
 
 One shared id for every world object, for Godot 4.7+. It hands out the integer ids that other addons, such as dot-combat, use to key their records, and it keeps two lookups: node to id, and your own key to id. Part of the [dot-*](https://github.com/gamespice-platform) family. It needs only [dot-core](https://github.com/gamespice-platform/core).
 
