@@ -10,7 +10,7 @@ config_version=5
 
 [application]
 
-config/name="dot-entity"
+config/name="gs-entity"
 config/description="An allocator for entity ids that carry their own kind, a record kept beside the node rather than on it, and the node and key reverse indexes every game was maintaining by hand."
 config/version="0.1.0"
 run/main_scene="res://examples/entity_selftest.tscn"
@@ -24,7 +24,7 @@ window/size/viewport_height=900
 
 [editor_plugins]
 
-enabled=PackedStringArray("res://addons/dot_core/plugin.cfg", "res://addons/dot_entity/plugin.cfg")
+enabled=PackedStringArray("res://addons/gs_core/plugin.cfg", "res://addons/gs_entity/plugin.cfg")
 
 [importer_defaults]
 

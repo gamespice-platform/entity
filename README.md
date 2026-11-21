@@ -1,13 +1,13 @@
 [![Entity - GameSpice addon](docs/banner.png)](https://moddingcommunity.com/a/61-gs-entity)
 
-One shared id for every world object, for Godot 4.7+. It hands out the integer ids that other addons, such as dot-combat, use to key their records, and it keeps two lookups: node to id, and your own key to id. Part of the [GameSpice](https://github.com/gamespice-platform) family. It needs only [GameSpice Core](https://github.com/gamespice-platform/core).
+One shared id for every world object, for Godot 4.7+. It hands out the integer ids that other addons, such as gs-combat, use to key their records, and it keeps two lookups: node to id, and your own key to id. Part of the [GameSpice](https://github.com/gamespice-platform) family. It needs only [GameSpice Core](https://github.com/gamespice-platform/core).
 
 Before this addon, each game invented its own ids. One used the peer id for players and a hash of the engine instance id for monsters. Two monsters could collide in silence, and the loser then stopped taking damage. GameSpice Entity is the one allocator that cannot collide.
 
 ## Install
 
-1. Copy `addons/dot_entity/` and `addons/dot_core/` into your project.
-2. Enable dot-entity in *Project > Project Settings > Plugins*.
+1. Copy `addons/gs_entity/` and `addons/gs_core/` into your project.
+2. Enable gs-entity in *Project > Project Settings > Plugins*.
 
 ## What an id is
 

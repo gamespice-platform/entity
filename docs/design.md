@@ -32,7 +32,7 @@ A node freed without `close()` leaks a handle for the life of the process, becau
 GameSpice Props, GameSpice NPC and GameSpice Vehicle have each independently grown the same six-file set: `def` / `catalogue` / `limits` / `instance` / `spawner` / `net_sync`.
 
 - The three `*Instance` records share `node`, `instance_id`, `owner_id`, `spawned_at` and `alive`, and all three carry the same paragraph about why `alive` cannot be `is_instance_valid`. `GSEntityHandle` holds that half, but none of the three extends or uses it yet.
-- `dot_npc_limits.gd` and `dot_prop_limits.gd` differ mostly in prose.
+- `gs_npc_limits.gd` and `gs_prop_limits.gd` differ mostly in prose.
 - The three spawners share a set of identically named methods: `spawn`, `_prepare`, `_adopt`, `may_spawn`, `_refuse`, `remove`, `clear_owner`, `clear_all`, `owner_left`, `X_for_node`, `world_count`, `world_cost`, `all_X`, `_resolve_world`, `describe`, `describe_lines`.
 - The catalogues (props, npc, vehicle, weapon) are near-copies of one another.
 
@@ -46,4 +46,4 @@ It very nearly was. GameSpice Core is linked in every project, so putting the ta
 
 Against it: GameSpice Core is the foundation (logging, platform capabilities, paths, transports, randomness) and none of it knows what a game is. An entity table is a runtime game concept with a lifetime tied to a match. Putting it in GameSpice Core would be the first thing there that only a game uses.
 
-If dot-combat, dot-effects or dot-net ever need the handle *without* taking a dot-entity dependency, that argument flips and `GSEntity` plus `GSEntityTable` move to dot-core. They are two files with no dependencies of their own, which is the shape that makes such a move cheap; keep it that way.
+If gs-combat, gs-effects or gs-net ever need the handle *without* taking a gs-entity dependency, that argument flips and `GSEntity` plus `GSEntityTable` move to gs-core. They are two files with no dependencies of their own, which is the shape that makes such a move cheap; keep it that way.

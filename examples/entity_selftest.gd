@@ -58,7 +58,7 @@ func _ready() -> void:
 
 
 func _run() -> void:
-	print("dot-entity: the id space every world object shares")
+	print("gs-entity: the id space every world object shares")
 
 	_test_the_layout()
 	_test_allocation()

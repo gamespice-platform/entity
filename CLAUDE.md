@@ -4,29 +4,29 @@ The id space every world object shares. `GSEntity` packs a kind and a serial int
 
 Read the family [CLAUDE.md](../../CLAUDE.md) and [godot/NOTES.md](../NOTES.md) first.
 
-**The distributable is `addons/dot_entity/`.** It requires [GameSpice Core](../dot-core) and nothing else (`ln -s ../../dot-core/addons/dot_core addons/dot_core`, gitignored).
+**The distributable is `addons/gs_entity/`.** It requires [GameSpice Core](../gs-core) and nothing else (`ln -s ../../gs-core/addons/gs_core addons/gs_core`, gitignored).
 
 ## Read before
 
 | Read | Before |
 | --- | --- |
-| [docs/design.md](docs/design.md) | changing the layout or the table: the four load-bearing decisions, the tree guard, lifetimes and sweeping, the unbuilt second layer, why not dot-core |
+| [docs/design.md](docs/design.md) | changing the layout or the table: the four load-bearing decisions, the tree guard, lifetimes and sweeping, the unbuilt second layer, why not gs-core |
 | [docs/history.md](docs/history.md) | why it exists: the hand-rolled schemes it replaced, and the collision one of them had |
 
 ## Layout
 
 | Path | What |
 | --- | --- |
-| `core/dot_entity.gd` | `GSEntity`: `KIND_*` constants (0 reserved, 1..8), `KIND_NAMES`, `STRIDE`, packing and unpacking |
-| `core/dot_entity_table.gd` | `GSEntityTable`: `open`, `close`, `close_owner`, `sweep`, `clear`, lookups by id, node and key, listings, `opened` / `closed` signals |
-| `core/dot_entity_handle.gd` | `GSEntityHandle`: one open entity; `node`, owner, `is_alive`, `position`, `position_2d` |
+| `core/gs_entity.gd` | `GSEntity`: `KIND_*` constants (0 reserved, 1..8), `KIND_NAMES`, `STRIDE`, packing and unpacking |
+| `core/gs_entity_table.gd` | `GSEntityTable`: `open`, `close`, `close_owner`, `sweep`, `clear`, lookups by id, node and key, listings, `opened` / `closed` signals |
+| `core/gs_entity_handle.gd` | `GSEntityHandle`: one open entity; `node`, owner, `is_alive`, `position`, `position_2d` |
 | `examples/entity_selftest.tscn` | the suite |
 
-Paths except `examples/` are in `addons/dot_entity/`.
+Paths except `examples/` are in `addons/gs_entity/`.
 
 ## Running and testing
 
-The family's two steps ([family CLAUDE.md](../../CLAUDE.md#validating-anything)), then `timeout 120 godot --headless --path . res://examples/entity_selftest.tscn`. Stderr should be empty. After adding a `class_name` here, re-run `--import` in every project that links `addons/dot_entity`.
+The family's two steps ([family CLAUDE.md](../../CLAUDE.md#validating-anything)), then `timeout 120 godot --headless --path . res://examples/entity_selftest.tscn`. Stderr should be empty. After adding a `class_name` here, re-run `--import` in every project that links `addons/gs_entity`.
 
 ## Rules that bite
 
@@ -38,7 +38,7 @@ The family's two steps ([family CLAUDE.md](../../CLAUDE.md#validating-anything))
 - `close()` frees nothing: close, then free. [design](docs/design.md#lifetimes-close-then-free-then-sweep)
 - A node freed without `close()` leaks until `sweep()`; call it once per tick or round. `auto_sweep` stays off by default. [design](docs/design.md#lifetimes-close-then-free-then-sweep)
 - `count()` and `ids()` honour `auto_sweep`; the per-kind and handle listings deliberately do not. [design](docs/design.md#lifetimes-close-then-free-then-sweep)
-- `GSEntity` and `GSEntityTable` depend on nothing but GameSpice Core; keep them movable. [design](docs/design.md#why-this-is-its-own-repository-and-not-part-of-dot-core)
+- `GSEntity` and `GSEntityTable` depend on nothing but GameSpice Core; keep them movable. [design](docs/design.md#why-this-is-its-own-repository-and-not-part-of-gs-core)
 
 ## Open items
 
