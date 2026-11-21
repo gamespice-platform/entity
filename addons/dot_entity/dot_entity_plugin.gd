@@ -3,7 +3,7 @@ extends EditorPlugin
 
 ## Editor entry point for GameSpice Entity. It registers nothing, and that is correct.
 ##
-## [b]Everything in this addon is a plain object a game owns.[/b] A [DotEntityTable] is
+## [b]Everything in this addon is a plain object a game owns.[/b] A [GSEntityTable] is
 ## not a [Node] and not an autoload: a table belongs to one game, and a process running
 ## a server and a client -- or two servers in one editor session -- has two of them. It
 ## has no tick and nothing to place, so there is no "Add Node" entry to offer and no

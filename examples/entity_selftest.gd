@@ -50,9 +50,9 @@ var _made: Array[Node] = []
 
 
 func _ready() -> void:
-	DotLog.set_level(
-		DotLog.Level.DEBUG if "--verbose" in OS.get_cmdline_user_args()
-		else DotLog.Level.ERROR
+	GSLog.set_level(
+		GSLog.Level.DEBUG if "--verbose" in OS.get_cmdline_user_args()
+		else GSLog.Level.ERROR
 	)
 	_run.call_deferred()
 
@@ -99,50 +99,50 @@ func _run() -> void:
 func _test_the_layout() -> void:
 	_section("an id carries its own kind")
 
-	var id := DotEntity.make_id(DotEntity.KIND_NPC, 41)
+	var id := GSEntity.make_id(GSEntity.KIND_NPC, 41)
 
 	_check(id > 0, "an id is made")
-	_check(DotEntity.kind_of(id) == DotEntity.KIND_NPC, "the kind comes back out")
-	_check(DotEntity.serial_of(id) == 41, "the serial comes back out")
-	_check(DotEntity.is_kind(id, DotEntity.KIND_NPC), "is_kind agrees")
-	_check(not DotEntity.is_kind(id, DotEntity.KIND_PLAYER), "and disagrees with the rest")
+	_check(GSEntity.kind_of(id) == GSEntity.KIND_NPC, "the kind comes back out")
+	_check(GSEntity.serial_of(id) == 41, "the serial comes back out")
+	_check(GSEntity.is_kind(id, GSEntity.KIND_NPC), "is_kind agrees")
+	_check(not GSEntity.is_kind(id, GSEntity.KIND_PLAYER), "and disagrees with the rest")
 
 	# The readability the decimal stride was chosen for.
 	_check(
-		DotEntity.describe_id(id) == "npc#41",
+		GSEntity.describe_id(id) == "npc#41",
 		"describe_id reads as a person would say it",
-		DotEntity.describe_id(id)
+		GSEntity.describe_id(id)
 	)
 
 	# Zero is GameSpice Combat's "no attacker" and nothing may ever collide with it.
-	_check(DotEntity.kind_of(0) == DotEntity.KIND_NONE, "zero is not a kind")
-	_check(not DotEntity.is_valid(0), "zero is not a valid id")
-	_check(DotEntity.describe_id(0) == "none", "zero describes as none")
-	_check(DotEntity.make_id(DotEntity.KIND_NONE, 1) == 0, "KIND_NONE cannot be allocated")
-	_check(DotEntity.make_id(DotEntity.KIND_NPC, 0) == 0, "serial zero cannot be allocated")
+	_check(GSEntity.kind_of(0) == GSEntity.KIND_NONE, "zero is not a kind")
+	_check(not GSEntity.is_valid(0), "zero is not a valid id")
+	_check(GSEntity.describe_id(0) == "none", "zero describes as none")
+	_check(GSEntity.make_id(GSEntity.KIND_NONE, 1) == 0, "KIND_NONE cannot be allocated")
+	_check(GSEntity.make_id(GSEntity.KIND_NPC, 0) == 0, "serial zero cannot be allocated")
 
 	# Total for input it did not produce, rather than indexing off the end of the
 	# name table: an id off a wire is not one this build necessarily understands.
-	_check(DotEntity.kind_of(-5) == DotEntity.KIND_NONE, "a negative id is not a kind")
+	_check(GSEntity.kind_of(-5) == GSEntity.KIND_NONE, "a negative id is not a kind")
 	_check(
-		DotEntity.kind_of((DotEntity.KIND_MAX + 3) * DotEntity.STRIDE) == DotEntity.KIND_NONE,
+		GSEntity.kind_of((GSEntity.KIND_MAX + 3) * GSEntity.STRIDE) == GSEntity.KIND_NONE,
 		"a kind from the future is not a kind"
 	)
-	_check(DotEntity.kind_name(99) == &"?", "an unknown kind still has a name")
+	_check(GSEntity.kind_name(99) == &"?", "an unknown kind still has a name")
 
 	# Every kind must round-trip, or a name table and a constant have drifted.
 	var all_round_trip := true
 
-	for kind in range(DotEntity.KIND_NONE + 1, DotEntity.KIND_MAX + 1):
-		var made := DotEntity.make_id(kind, 7)
+	for kind in range(GSEntity.KIND_NONE + 1, GSEntity.KIND_MAX + 1):
+		var made := GSEntity.make_id(kind, 7)
 
-		if DotEntity.kind_of(made) != kind or DotEntity.serial_of(made) != 7:
+		if GSEntity.kind_of(made) != kind or GSEntity.serial_of(made) != 7:
 			all_round_trip = false
 
-		if DotEntity.kind_name(kind) == &"?":
+		if GSEntity.kind_name(kind) == &"?":
 			all_round_trip = false
 
-	_check(all_round_trip, "every kind round-trips and has a name (%d kinds)" % DotEntity.KIND_MAX)
+	_check(all_round_trip, "every kind round-trips and has a name (%d kinds)" % GSEntity.KIND_MAX)
 
 	_done()
 
@@ -152,25 +152,25 @@ func _test_the_layout() -> void:
 func _test_allocation() -> void:
 	_section("the allocator hands out unique ids")
 
-	var table := DotEntityTable.new()
+	var table := GSEntityTable.new()
 	var seen := {}
 	var all_unique := true
 	var all_right_kind := true
 
 	for i in range(200):
-		var kind := DotEntity.KIND_NPC if i % 2 == 0 else DotEntity.KIND_PROP
+		var kind := GSEntity.KIND_NPC if i % 2 == 0 else GSEntity.KIND_PROP
 		var opened := table.open(kind, _node("n%d" % i))
 
 		if not opened.ok:
 			all_unique = false
 			break
 
-		var handle: DotEntityHandle = opened.value
+		var handle: GSEntityHandle = opened.value
 
 		if seen.has(handle.id):
 			all_unique = false
 
-		if handle.kind != kind or DotEntity.kind_of(handle.id) != kind:
+		if handle.kind != kind or GSEntity.kind_of(handle.id) != kind:
 			all_right_kind = false
 
 		seen[handle.id] = true
@@ -178,13 +178,13 @@ func _test_allocation() -> void:
 	_check(all_unique, "200 ids, no repeats")
 	_check(all_right_kind, "each id carries the kind it was opened with")
 	_check(table.count() == 200, "the table holds all of them (%d)" % table.count())
-	_check(table.count_of_kind(DotEntity.KIND_NPC) == 100, "and counts them by kind")
+	_check(table.count_of_kind(GSEntity.KIND_NPC) == 100, "and counts them by kind")
 
 	# The property the old schemes did not have. FC derived a monster's id from
 	# `instance_id % 1_000_000`, so two nodes a million apart collided and one lost
 	# its health registration with no error anywhere.
-	var serials := table.ids_of_kind(DotEntity.KIND_NPC).map(
-		func(id: int) -> int: return DotEntity.serial_of(id)
+	var serials := table.ids_of_kind(GSEntity.KIND_NPC).map(
+		func(id: int) -> int: return GSEntity.serial_of(id)
 	)
 	serials.sort()
 
@@ -205,9 +205,9 @@ func _test_allocation() -> void:
 func _test_the_node_index() -> void:
 	_section("a node can be turned back into an entity")
 
-	var table := DotEntityTable.new()
+	var table := GSEntityTable.new()
 	var body := _node("Body")
-	var handle: DotEntityHandle = table.open(DotEntity.KIND_PLAYER, body).value
+	var handle: GSEntityHandle = table.open(GSEntity.KIND_PLAYER, body).value
 
 	_check(table.id_for_node(body) == handle.id, "node -> id")
 	_check(table.handle_for_node(body) == handle, "node -> handle")
@@ -233,7 +233,7 @@ func _test_the_node_index() -> void:
 	_done()
 
 
-func _node_index_dimensions(table: DotEntityTable) -> void:
+func _node_index_dimensions(table: GSEntityTable) -> void:
 	# The dimension-free half. A 2D game gets a Node2D here and nothing else changes,
 	# which is only true if these four actually answer -- and an addon whose 2D path
 	# is never exercised is an addon that has a 3D path.
@@ -243,7 +243,7 @@ func _node_index_dimensions(table: DotEntityTable) -> void:
 	add_child(flat)
 	_made.append(flat)
 
-	var flat_handle: DotEntityHandle = table.open(DotEntity.KIND_PROP, flat).value
+	var flat_handle: GSEntityHandle = table.open(GSEntity.KIND_PROP, flat).value
 
 	_check(flat_handle.is_2d(), "a Node2D entity knows it is 2D")
 	_check(flat_handle.node_2d() == flat, "node_2d hands it back")
@@ -257,7 +257,7 @@ func _node_index_dimensions(table: DotEntityTable) -> void:
 	add_child(tall)
 	_made.append(tall)
 
-	var tall_handle: DotEntityHandle = table.open(DotEntity.KIND_PROP, tall).value
+	var tall_handle: GSEntityHandle = table.open(GSEntity.KIND_PROP, tall).value
 
 	_check(not tall_handle.is_2d(), "a Node3D entity knows it is not")
 	_check(tall_handle.node_3d() == tall, "node_3d hands it back")
@@ -266,7 +266,7 @@ func _node_index_dimensions(table: DotEntityTable) -> void:
 	_check(tall_handle.position_2d() == Vector2.ZERO, "and the 2D one declines")
 
 
-func _node_index_orphans(table: DotEntityTable) -> void:
+func _node_index_orphans(table: GSEntityTable) -> void:
 	# The guard on both, and the reason it is there: a global transform is only defined
 	# inside the tree, and the engine's two answers for a node outside it disagree --
 	# Node3D pushes an error with a backtrace and returns identity, Node2D silently
@@ -282,8 +282,8 @@ func _node_index_orphans(table: DotEntityTable) -> void:
 	orphan_2d.position = Vector2(9.0, 9.0)
 	_made.append(orphan_2d)
 
-	var o3: DotEntityHandle = table.open(DotEntity.KIND_PROP, orphan_3d).value
-	var o2: DotEntityHandle = table.open(DotEntity.KIND_PROP, orphan_2d).value
+	var o3: GSEntityHandle = table.open(GSEntity.KIND_PROP, orphan_3d).value
+	var o2: GSEntityHandle = table.open(GSEntity.KIND_PROP, orphan_2d).value
 
 	_check(o3.position() == Vector3.ZERO, "an unparented 3D entity has no position")
 	_check(o2.position_2d() == Vector2.ZERO, "and neither has an unparented 2D one")
@@ -295,12 +295,12 @@ func _node_index_orphans(table: DotEntityTable) -> void:
 func _test_the_key_index() -> void:
 	_section("a game's own name for an entity")
 
-	var table := DotEntityTable.new()
+	var table := GSEntityTable.new()
 
 	# The gap every game closed by hand: a game keys players by something of its own
 	# and GameSpice Combat keys by int.
-	var handle: DotEntityHandle = table.open(
-		DotEntity.KIND_PLAYER, _node("P"), &"", &"u123"
+	var handle: GSEntityHandle = table.open(
+		GSEntity.KIND_PLAYER, _node("P"), &"", &"u123"
 	).value
 
 	_check(table.id_for_key(&"u123") == handle.id, "key -> id")
@@ -312,15 +312,15 @@ func _test_the_key_index() -> void:
 	# arithmetic relationship at all, so there is no formula for the two ends of this
 	# to disagree about.
 	_check(
-		DotEntity.serial_of(handle.id) != 123,
-		"the id is not derived from the name (serial %d)" % DotEntity.serial_of(handle.id)
+		GSEntity.serial_of(handle.id) != 123,
+		"the id is not derived from the name (serial %d)" % GSEntity.serial_of(handle.id)
 	)
 
 	table.close(handle.id)
 
 	_check(table.id_for_key(&"u123") == 0, "closing releases the key")
 	_check(
-		table.open(DotEntity.KIND_PLAYER, _node("P2"), &"", &"u123").ok,
+		table.open(GSEntity.KIND_PLAYER, _node("P2"), &"", &"u123").ok,
 		"so a reconnecting player can take their name back"
 	)
 
@@ -332,51 +332,51 @@ func _test_the_key_index() -> void:
 func _test_refusals() -> void:
 	_section("what it refuses, and with which code")
 
-	var table := DotEntityTable.new()
+	var table := GSEntityTable.new()
 	var body := _node("Body")
 
-	var first := table.open(DotEntity.KIND_PROP, body)
+	var first := table.open(GSEntity.KIND_PROP, body)
 	_check(first.ok, "the first open succeeds")
 
 	# Always a bug, and a quiet one: the second id works, the first is still in the
 	# table, and the node index now answers with whichever was written last.
-	var again := table.open(DotEntity.KIND_PROP, body)
+	var again := table.open(GSEntity.KIND_PROP, body)
 	_check(not again.ok, "a node cannot be opened twice")
 	_check(
-		not again.ok and again.code() == DotError.CODE_STATE,
+		not again.ok and again.code() == GSError.CODE_STATE,
 		"and it is a state error",
 		"" if again.ok else again.code()
 	)
 
-	var dupe_a := table.open(DotEntity.KIND_PLAYER, _node("A"), &"", &"same")
-	var dupe_b := table.open(DotEntity.KIND_PLAYER, _node("B"), &"", &"same")
+	var dupe_a := table.open(GSEntity.KIND_PLAYER, _node("A"), &"", &"same")
+	var dupe_b := table.open(GSEntity.KIND_PLAYER, _node("B"), &"", &"same")
 	_check(dupe_a.ok and not dupe_b.ok, "two entities cannot share a key")
 	_check(
-		not dupe_b.ok and dupe_b.code() == DotError.CODE_STATE,
+		not dupe_b.ok and dupe_b.code() == GSError.CODE_STATE,
 		"and that is a state error too"
 	)
 
-	var bad_kind := table.open(DotEntity.KIND_NONE, _node("C"))
+	var bad_kind := table.open(GSEntity.KIND_NONE, _node("C"))
 	_check(not bad_kind.ok, "KIND_NONE cannot be opened")
 	_check(
-		not bad_kind.ok and bad_kind.code() == DotError.CODE_INVALID,
+		not bad_kind.ok and bad_kind.code() == GSError.CODE_INVALID,
 		"and that is invalid, not a state error"
 	)
 
-	var too_big := table.open(DotEntity.KIND_MAX + 1, _node("D"))
+	var too_big := table.open(GSEntity.KIND_MAX + 1, _node("D"))
 	_check(not too_big.ok, "a kind this build does not have cannot be opened")
 
-	var no_node := table.open(DotEntity.KIND_PROP, null)
+	var no_node := table.open(GSEntity.KIND_PROP, null)
 	_check(not no_node.ok, "an entity without a node is refused")
 	_check(
-		not no_node.ok and no_node.code() == DotError.CODE_INVALID,
+		not no_node.ok and no_node.code() == GSError.CODE_INVALID,
 		"and that is invalid"
 	)
 
 	# A refused open must not consume a serial or leave a half-written index entry.
 	var before := table.count()
-	table.open(DotEntity.KIND_PROP, null)
-	table.open(DotEntity.KIND_NONE, _node("E"))
+	table.open(GSEntity.KIND_PROP, null)
+	table.open(GSEntity.KIND_NONE, _node("E"))
 	_check(table.count() == before, "a refusal changes nothing (%d)" % table.count())
 
 	_done()
@@ -387,26 +387,26 @@ func _test_refusals() -> void:
 func _test_closing() -> void:
 	_section("closing, and what a stale id finds")
 
-	var table := DotEntityTable.new()
+	var table := GSEntityTable.new()
 	var body := _node("Body")
-	var handle: DotEntityHandle = table.open(DotEntity.KIND_NPC, body).value
+	var handle: GSEntityHandle = table.open(GSEntity.KIND_NPC, body).value
 	var id := handle.id
 
 	# Captured into an Array, not into a scalar: a lambda captures locals by value,
 	# so a captured int assigned inside a signal handler stays at its initial value
 	# and the check reads as a signal that never fired.
 	var heard: Array = []
-	table.closed.connect(func(h: DotEntityHandle, reason: StringName) -> void:
+	table.closed.connect(func(h: GSEntityHandle, reason: StringName) -> void:
 		heard.append([h.id, reason, h.node != null])
 	)
 
-	var closed := table.close(id, DotEntityTable.REASON_KILLED)
+	var closed := table.close(id, GSEntityTable.REASON_KILLED)
 
 	_check(closed.ok, "close succeeds")
 	_check(heard.size() == 1, "the closed signal fired")
 	_check(heard.size() == 1 and int(heard[0][0]) == id, "carrying the id")
 	_check(
-		heard.size() == 1 and StringName(heard[0][1]) == DotEntityTable.REASON_KILLED,
+		heard.size() == 1 and StringName(heard[0][1]) == GSEntityTable.REASON_KILLED,
 		"and the reason"
 	)
 	# The whole argument for emitting the handle rather than the id: a listener handed
@@ -421,13 +421,13 @@ func _test_closing() -> void:
 	# The property that makes a stale id safe, and the reason serials are never
 	# reused: a handle from last round cannot silently resolve to this round's
 	# entity in the same slot.
-	var fresh: DotEntityHandle = table.open(DotEntity.KIND_NPC, _node("Next")).value
+	var fresh: GSEntityHandle = table.open(GSEntity.KIND_NPC, _node("Next")).value
 	_check(fresh.id != id, "the next entity does not get the dead one's id")
 	_check(table.handle(id) == null, "so the stale id still finds nothing")
 
 	var twice := table.close(id)
 	_check(not twice.ok, "closing twice is refused rather than silent")
-	_check(not twice.ok and twice.code() == DotError.CODE_STATE, "as a state error")
+	_check(not twice.ok and twice.code() == GSError.CODE_STATE, "as a state error")
 
 	_check(table.close(0).ok == false, "and closing nothing is refused")
 
@@ -439,31 +439,31 @@ func _test_closing() -> void:
 func _test_ownership() -> void:
 	_section("one disconnect takes everything that player owned")
 
-	var table := DotEntityTable.new()
+	var table := GSEntityTable.new()
 
 	for i in range(5):
-		table.open(DotEntity.KIND_PROP, _node("a%d" % i), &"alice")
+		table.open(GSEntity.KIND_PROP, _node("a%d" % i), &"alice")
 
 	for i in range(3):
-		table.open(DotEntity.KIND_PROP, _node("b%d" % i), &"bob")
+		table.open(GSEntity.KIND_PROP, _node("b%d" % i), &"bob")
 
-	table.open(DotEntity.KIND_NPC, _node("map"), &"")
+	table.open(GSEntity.KIND_NPC, _node("map"), &"")
 
 	_check(table.handles_of_owner(&"alice").size() == 5, "alice owns five")
 	_check(table.handles_of_owner(&"bob").size() == 3, "bob owns three")
-	_check(table.handles_of_kind(DotEntity.KIND_PROP).size() == 8, "eight props between them")
-	_check(table.handles_of_kind(DotEntity.KIND_NPC).size() == 1, "and one NPC that is nobody's")
+	_check(table.handles_of_kind(GSEntity.KIND_PROP).size() == 8, "eight props between them")
+	_check(table.handles_of_kind(GSEntity.KIND_NPC).size() == 1, "and one NPC that is nobody's")
 	_check(
-		table.handles_of_kind(DotEntity.KIND_VEHICLE).is_empty(),
+		table.handles_of_kind(GSEntity.KIND_VEHICLE).is_empty(),
 		"a kind with none of them lists none"
 	)
 	_check(
-		table.ids_of_kind(DotEntity.KIND_PROP).size() == 8,
+		table.ids_of_kind(GSEntity.KIND_PROP).size() == 8,
 		"and the id listing agrees with the handle listing"
 	)
 
 	var reasons: Array = []
-	table.closed.connect(func(_h: DotEntityHandle, reason: StringName) -> void:
+	table.closed.connect(func(_h: GSEntityHandle, reason: StringName) -> void:
 		reasons.append(reason)
 	)
 
@@ -474,7 +474,7 @@ func _test_ownership() -> void:
 	_check(table.handles_of_owner(&"bob").size() == 3, "and does not touch bob's")
 	_check(table.count() == 4, "the map's entity survives too (%d left)" % table.count())
 	_check(
-		reasons.size() == 5 and StringName(reasons[0]) == DotEntityTable.REASON_OWNER_LEFT,
+		reasons.size() == 5 and StringName(reasons[0]) == GSEntityTable.REASON_OWNER_LEFT,
 		"with the reason a listener can act on"
 	)
 
@@ -491,16 +491,16 @@ func _test_ownership() -> void:
 func _test_the_sweep() -> void:
 	_section("a node freed behind the table's back")
 
-	var table := DotEntityTable.new()
+	var table := GSEntityTable.new()
 	var doomed: Array[Node] = []
 
 	for i in range(3):
 		var n := _node("doomed%d" % i)
 		doomed.append(n)
-		table.open(DotEntity.KIND_PROP, n, &"someone")
+		table.open(GSEntity.KIND_PROP, n, &"someone")
 
 	var kept := _node("kept")
-	table.open(DotEntity.KIND_PROP, kept, &"someone")
+	table.open(GSEntity.KIND_PROP, kept, &"someone")
 
 	# The leak this addon is most likely to grow: a scene reload or a queue_free on a
 	# parent frees nodes without anybody calling close(), and the table then holds a
@@ -512,7 +512,7 @@ func _test_the_sweep() -> void:
 	_check(table.count() == 4, "the table has not noticed yet (%d)" % table.count())
 
 	var reasons: Array = []
-	table.closed.connect(func(_h: DotEntityHandle, reason: StringName) -> void:
+	table.closed.connect(func(_h: GSEntityHandle, reason: StringName) -> void:
 		reasons.append(reason)
 	)
 
@@ -524,7 +524,7 @@ func _test_the_sweep() -> void:
 	_check(table.count() == 1, "and leaves the live one")
 	_check(table.id_for_node(kept) != 0, "which is still indexed")
 	_check(
-		reasons.size() == 3 and StringName(reasons[0]) == DotEntityTable.REASON_ORPHANED,
+		reasons.size() == 3 and StringName(reasons[0]) == GSEntityTable.REASON_ORPHANED,
 		"closed with the reason that says it was not a despawn"
 	)
 	_check(table.sweep() == 0, "a second sweep finds nothing")
@@ -533,17 +533,17 @@ func _test_the_sweep() -> void:
 	# used to hand back a freed node's handle.
 	table.auto_sweep = true
 	var ghost := _node("ghost")
-	table.open(DotEntity.KIND_PROP, ghost, &"someone")
+	table.open(GSEntity.KIND_PROP, ghost, &"someone")
 	ghost.free()
 	_check(
-		table.handles_of_kind(DotEntity.KIND_PROP).size() == 1 and table.count_of_kind(DotEntity.KIND_PROP) == 1,
+		table.handles_of_kind(GSEntity.KIND_PROP).size() == 1 and table.count_of_kind(GSEntity.KIND_PROP) == 1,
 		"with auto_sweep a per-kind listing does not hand back a freed node"
 	)
 
 	# A handle kept past its node's death: is/as on a freed instance is a script error.
-	var held := DotEntityTable.new()
+	var held := GSEntityTable.new()
 	var gone := _node("gone")
-	var held_handle: DotEntityHandle = held.open(DotEntity.KIND_PROP, gone, &"someone").value
+	var held_handle: GSEntityHandle = held.open(GSEntity.KIND_PROP, gone, &"someone").value
 	gone.free()
 	var catcher := ErrorCatcher.new()
 	OS.add_logger(catcher)
@@ -561,11 +561,11 @@ func _test_the_sweep() -> void:
 func _test_describe() -> void:
 	_section("describe says something true")
 
-	var table := DotEntityTable.new()
+	var table := GSEntityTable.new()
 
-	table.open(DotEntity.KIND_PLAYER, _node("p1"), &"", &"u1")
-	table.open(DotEntity.KIND_PLAYER, _node("p2"), &"", &"u2")
-	table.open(DotEntity.KIND_NPC, _node("n1"))
+	table.open(GSEntity.KIND_PLAYER, _node("p1"), &"", &"u1")
+	table.open(GSEntity.KIND_PLAYER, _node("p2"), &"", &"u2")
+	table.open(GSEntity.KIND_NPC, _node("n1"))
 
 	var d := table.describe()
 
@@ -593,10 +593,10 @@ func _test_describe() -> void:
 	_check(lines.size() > 0, "describe_lines says something (%d lines)" % lines.size())
 	_check(mentions_count, "including how many entities there have been")
 
-	var handle: DotEntityHandle = table.open(DotEntity.KIND_VEHICLE, _node("v")).value
+	var handle: GSEntityHandle = table.open(GSEntity.KIND_VEHICLE, _node("v")).value
 	var hd := handle.describe()
 
-	_check(String(hd["id"]) == DotEntity.describe_id(handle.id), "a handle describes its id")
+	_check(String(hd["id"]) == GSEntity.describe_id(handle.id), "a handle describes its id")
 	_check(String(hd["kind"]) == "vehicle", "and its kind by name")
 	_check(bool(hd["alive"]), "and whether it is alive")
 
@@ -608,45 +608,45 @@ func _test_describe() -> void:
 func _test_limits() -> void:
 	_section("the kind and serial limits are settings with the old values as defaults")
 
-	_check(DotEntity.kind_limit == 8 and DotEntity.KIND_MAX == 8, "the kind limit defaults to 8")
-	var fresh := DotEntityTable.new()
-	_check(fresh.serial_limit == DotEntity.SERIAL_MAX, "the serial limit defaults to 10^12 - 1")
+	_check(GSEntity.kind_limit == 8 and GSEntity.KIND_MAX == 8, "the kind limit defaults to 8")
+	var fresh := GSEntityTable.new()
+	_check(fresh.serial_limit == GSEntity.SERIAL_MAX, "the serial limit defaults to 10^12 - 1")
 
 	# A lowered serial limit refuses loudly, uses no id and wraps nothing.
-	var small := DotEntityTable.new()
+	var small := GSEntityTable.new()
 	_check(small.set_serial_limit(2).ok, "a serial limit can be lowered")
-	_check(small.open(DotEntity.KIND_PROP, _node("s1")).ok, "serial 1 opens")
-	_check(small.open(DotEntity.KIND_PROP, _node("s2")).ok, "serial 2 opens")
-	var over := small.open(DotEntity.KIND_PROP, _node("s3"))
-	_check(not over.ok and over.code() == DotError.CODE_QUOTA, "serial 3 is refused with CODE_QUOTA, not clamped")
-	_check(small.open(DotEntity.KIND_NPC, _node("s4")).ok, "and the limit is per kind")
+	_check(small.open(GSEntity.KIND_PROP, _node("s1")).ok, "serial 1 opens")
+	_check(small.open(GSEntity.KIND_PROP, _node("s2")).ok, "serial 2 opens")
+	var over := small.open(GSEntity.KIND_PROP, _node("s3"))
+	_check(not over.ok and over.code() == GSError.CODE_QUOTA, "serial 3 is refused with CODE_QUOTA, not clamped")
+	_check(small.open(GSEntity.KIND_NPC, _node("s4")).ok, "and the limit is per kind")
 
-	_check(small.set_serial_limit(0).ok and small.serial_limit == DotEntity.SERIAL_MAX, "0 means the format ceiling")
-	_check(not small.set_serial_limit(DotEntity.SERIAL_MAX + 1).ok, "above the format ceiling is refused")
-	_check(not small.set_serial_limit(-1).ok and small.serial_limit == DotEntity.SERIAL_MAX, "negative is refused and changes nothing")
+	_check(small.set_serial_limit(0).ok and small.serial_limit == GSEntity.SERIAL_MAX, "0 means the format ceiling")
+	_check(not small.set_serial_limit(GSEntity.SERIAL_MAX + 1).ok, "above the format ceiling is refused")
+	_check(not small.set_serial_limit(-1).ok and small.serial_limit == GSEntity.SERIAL_MAX, "negative is refused and changes nothing")
 
 	# More kinds, with the same id format.
-	_check(DotEntity.make_id(9, 1) == 0, "kind 9 is not a kind by default")
-	_check(not DotEntity.set_kind_limit(7).ok, "a limit below the built-in kinds is refused")
-	_check(not DotEntity.set_kind_limit(DotEntity.KIND_FORMAT_MAX + 1).ok, "a limit the format cannot hold is refused")
-	_check(DotEntity.kind_limit == 8, "refusals change nothing")
+	_check(GSEntity.make_id(9, 1) == 0, "kind 9 is not a kind by default")
+	_check(not GSEntity.set_kind_limit(7).ok, "a limit below the built-in kinds is refused")
+	_check(not GSEntity.set_kind_limit(GSEntity.KIND_FORMAT_MAX + 1).ok, "a limit the format cannot hold is refused")
+	_check(GSEntity.kind_limit == 8, "refusals change nothing")
 
-	_check(DotEntity.set_kind_limit(20).ok, "the kind limit can be raised")
-	var id := DotEntity.make_id(9, 5)
-	_check(id == 9 * DotEntity.STRIDE + 5 and DotEntity.kind_of(id) == 9 and DotEntity.serial_of(id) == 5, "a raised kind uses the same layout")
-	_check(DotEntity.kind_name(9) == &"kind9", "an unnamed raised kind has a generated name")
-	_check(DotEntity.register_kind(9, &"boss").ok and DotEntity.describe_id(id) == "boss#5", "a registered name is used")
-	_check(not DotEntity.register_kind(3, &"x").ok and not DotEntity.register_kind(21, &"x").ok, "built-in and out-of-range kinds cannot be registered")
-	var t2 := DotEntityTable.new()
+	_check(GSEntity.set_kind_limit(20).ok, "the kind limit can be raised")
+	var id := GSEntity.make_id(9, 5)
+	_check(id == 9 * GSEntity.STRIDE + 5 and GSEntity.kind_of(id) == 9 and GSEntity.serial_of(id) == 5, "a raised kind uses the same layout")
+	_check(GSEntity.kind_name(9) == &"kind9", "an unnamed raised kind has a generated name")
+	_check(GSEntity.register_kind(9, &"boss").ok and GSEntity.describe_id(id) == "boss#5", "a registered name is used")
+	_check(not GSEntity.register_kind(3, &"x").ok and not GSEntity.register_kind(21, &"x").ok, "built-in and out-of-range kinds cannot be registered")
+	var t2 := GSEntityTable.new()
 	_check(t2.open(20, _node("k20")).ok and not t2.open(21, _node("k21")).ok, "a table opens up to the limit and refuses beyond")
 
-	_check(DotEntity.set_kind_limit(0).ok and DotEntity.kind_limit == DotEntity.KIND_FORMAT_MAX, "0 means the format ceiling")
-	var top := DotEntity.make_id(DotEntity.KIND_FORMAT_MAX, DotEntity.SERIAL_MAX)
-	_check(top > 0 and DotEntity.kind_of(top) == DotEntity.KIND_FORMAT_MAX, "the ceiling still fits an int64")
+	_check(GSEntity.set_kind_limit(0).ok and GSEntity.kind_limit == GSEntity.KIND_FORMAT_MAX, "0 means the format ceiling")
+	var top := GSEntity.make_id(GSEntity.KIND_FORMAT_MAX, GSEntity.SERIAL_MAX)
+	_check(top > 0 and GSEntity.kind_of(top) == GSEntity.KIND_FORMAT_MAX, "the ceiling still fits an int64")
 
-	DotEntity.set_kind_limit(DotEntity.KIND_MAX)
-	DotEntity._extra_names.clear()
-	_check(DotEntity.kind_of(id) == DotEntity.KIND_NONE, "restoring the default hides the raised kinds again")
+	GSEntity.set_kind_limit(GSEntity.KIND_MAX)
+	GSEntity._extra_names.clear()
+	_check(GSEntity.kind_of(id) == GSEntity.KIND_NONE, "restoring the default hides the raised kinds again")
 
 	_done()
 

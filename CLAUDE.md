@@ -1,6 +1,6 @@
 # GameSpice Entity
 
-The id space every world object shares. `DotEntity` packs a kind and a serial into one `int` (`id = kind * STRIDE + serial`), `DotEntityTable` hands out ids that are never reused and maps them to nodes, keys and owners, and `DotEntityHandle` is one open entity. GameSpice Combat, GameSpice Net and the games key by these ids.
+The id space every world object shares. `GSEntity` packs a kind and a serial into one `int` (`id = kind * STRIDE + serial`), `GSEntityTable` hands out ids that are never reused and maps them to nodes, keys and owners, and `GSEntityHandle` is one open entity. GameSpice Combat, GameSpice Net and the games key by these ids.
 
 Read the family [CLAUDE.md](../../CLAUDE.md) and [godot/NOTES.md](../NOTES.md) first.
 
@@ -17,9 +17,9 @@ Read the family [CLAUDE.md](../../CLAUDE.md) and [godot/NOTES.md](../NOTES.md) f
 
 | Path | What |
 | --- | --- |
-| `core/dot_entity.gd` | `DotEntity`: `KIND_*` constants (0 reserved, 1..8), `KIND_NAMES`, `STRIDE`, packing and unpacking |
-| `core/dot_entity_table.gd` | `DotEntityTable`: `open`, `close`, `close_owner`, `sweep`, `clear`, lookups by id, node and key, listings, `opened` / `closed` signals |
-| `core/dot_entity_handle.gd` | `DotEntityHandle`: one open entity; `node`, owner, `is_alive`, `position`, `position_2d` |
+| `core/dot_entity.gd` | `GSEntity`: `KIND_*` constants (0 reserved, 1..8), `KIND_NAMES`, `STRIDE`, packing and unpacking |
+| `core/dot_entity_table.gd` | `GSEntityTable`: `open`, `close`, `close_owner`, `sweep`, `clear`, lookups by id, node and key, listings, `opened` / `closed` signals |
+| `core/dot_entity_handle.gd` | `GSEntityHandle`: one open entity; `node`, owner, `is_alive`, `position`, `position_2d` |
 | `examples/entity_selftest.tscn` | the suite |
 
 Paths except `examples/` are in `addons/dot_entity/`.
@@ -38,8 +38,8 @@ The family's two steps ([family CLAUDE.md](../../CLAUDE.md#validating-anything))
 - `close()` frees nothing: close, then free. [design](docs/design.md#lifetimes-close-then-free-then-sweep)
 - A node freed without `close()` leaks until `sweep()`; call it once per tick or round. `auto_sweep` stays off by default. [design](docs/design.md#lifetimes-close-then-free-then-sweep)
 - `count()` and `ids()` honour `auto_sweep`; the per-kind and handle listings deliberately do not. [design](docs/design.md#lifetimes-close-then-free-then-sweep)
-- `DotEntity` and `DotEntityTable` depend on nothing but GameSpice Core; keep them movable. [design](docs/design.md#why-this-is-its-own-repository-and-not-part-of-dot-core)
+- `GSEntity` and `GSEntityTable` depend on nothing but GameSpice Core; keep them movable. [design](docs/design.md#why-this-is-its-own-repository-and-not-part-of-dot-core)
 
 ## Open items
 
-- The shared def / catalogue / limits / spawner base for GameSpice Props, GameSpice NPC and GameSpice Vehicle is designed and not built, and their `*Instance` records do not use `DotEntityHandle` yet. It lands as one pass across the three addons. [design](docs/design.md#the-second-layer-designed-and-not-built)
+- The shared def / catalogue / limits / spawner base for GameSpice Props, GameSpice NPC and GameSpice Vehicle is designed and not built, and their `*Instance` records do not use `GSEntityHandle` yet. It lands as one pass across the three addons. [design](docs/design.md#the-second-layer-designed-and-not-built)

@@ -1,11 +1,11 @@
 @tool
-class_name DotEntity
+class_name GSEntity
 extends RefCounted
 
 ## The id space every world object shares, and the arithmetic over it.
 ##
 ## [b]This exists because the games each invented it and disagreed.[/b]
-## [code]DotCombatManager[/code] keys hitboxes, health, authoritative origins and its
+## [code]GSCombatManager[/code] keys hitboxes, health, authoritative origins and its
 ## [code]entity_killed[/code] signal by an [code]entity_id: int[/code] — and nothing
 ## owned that number. Four games, four schemes: the peer id for players;
 ## [code]1_000_000 + (instance_id % 1_000_000)[/code] for monsters; a counter per
@@ -23,16 +23,16 @@ extends RefCounted
 ## check. Here it is [method kind_of], and it costs one division.
 ##
 ## [codeblock]
-## var id := table.open(DotEntity.KIND_NPC, node).value.id
-## DotEntity.kind_of(id)        # DotEntity.KIND_NPC
-## DotEntity.describe_id(id)    # "npc#1", the first npc a fresh table hands out
+## var id := table.open(GSEntity.KIND_NPC, node).value.id
+## GSEntity.kind_of(id)        # GSEntity.KIND_NPC
+## GSEntity.describe_id(id)    # "npc#1", the first npc a fresh table hands out
 ## [/codeblock]
 ##
 ## [b]Serials are never reused, and that is deliberate.[/b] The shipped practice for
 ## handles like these is an index plus a generation counter, so a stale handle can be
 ## told from a live one that happens to occupy the same slot. Reusing nothing gets the
 ## same guarantee for free: an id that named a dead entity is simply absent from
-## [DotEntityTable], for the life of the process, and every lookup that would have
+## [GSEntityTable], for the life of the process, and every lookup that would have
 ## silently found the wrong object finds nothing instead.
 
 ## What sort of thing an id names.
@@ -48,7 +48,7 @@ extends RefCounted
 ## every game in the tree relies on that. Reserving it here keeps that meaning true by
 ## construction rather than by everybody remembering.
 const KIND_NONE := 0     ## No entity. The world, a fall, an unattributed death.
-const KIND_PLAYER := 1   ## A person playing. One per [code]DotPlayer[/code].
+const KIND_PLAYER := 1   ## A person playing. One per [code]GSPlayer[/code].
 const KIND_NPC := 2      ## Something the server drives.
 const KIND_VEHICLE := 3  ## Something a player rides or drives.
 const KIND_PROP := 4     ## Something spawned into the world and simulated.
@@ -105,48 +105,48 @@ const KIND_NAMES: Array[StringName] = [
 ## A trillion serials per kind is 31 years at a thousand spawns a second, and
 ## the default eight kinds fit inside an [code]int64[/code] with four orders of
 ## magnitude to spare ([constant KIND_FORMAT_MAX] is the hard ceiling). Exhaustion is still handled rather than assumed: see
-## [method DotEntityTable.open].
+## [method GSEntityTable.open].
 const STRIDE := 1_000_000_000_000
 
 ## The largest serial a kind can hold. The format ceiling; a table can set a lower
-## limit with [member DotEntityTable.serial_limit], never a higher one.
+## limit with [member GSEntityTable.serial_limit], never a higher one.
 const SERIAL_MAX := STRIDE - 1
 
 
 ## Sets [member kind_limit]. [code]0[/code] means [constant KIND_FORMAT_MAX]. Fails with
-## [constant DotError.CODE_INVALID], and changes nothing, for a negative value, one below
+## [constant GSError.CODE_INVALID], and changes nothing, for a negative value, one below
 ## [constant KIND_MAX] (a built-in kind would become unusable) or one the layout cannot hold.
-static func set_kind_limit(limit: int) -> DotResult:
+static func set_kind_limit(limit: int) -> GSResult:
 	if limit == 0:
 		kind_limit = KIND_FORMAT_MAX
-		return DotResult.success(kind_limit)
+		return GSResult.success(kind_limit)
 
 	if limit < KIND_MAX or limit > KIND_FORMAT_MAX:
-		return DotResult.fail(
-			DotError.CODE_INVALID,
+		return GSResult.fail(
+			GSError.CODE_INVALID,
 			"The kind limit must be 0 (unlimited) or between %d and %d." % [KIND_MAX, KIND_FORMAT_MAX],
 			"limit=%d" % limit
 		)
 
 	kind_limit = limit
 
-	return DotResult.success(kind_limit)
+	return GSResult.success(kind_limit)
 
 
 ## Names a kind above [constant KIND_MAX] for logs and [method describe_id]. Fails with
-## [constant DotError.CODE_INVALID] for a built-in kind, a kind beyond [member kind_limit]
+## [constant GSError.CODE_INVALID] for a built-in kind, a kind beyond [member kind_limit]
 ## or an empty name.
-static func register_kind(kind: int, kind_name: StringName) -> DotResult:
+static func register_kind(kind: int, kind_name: StringName) -> GSResult:
 	if kind <= KIND_MAX or kind > kind_limit or kind_name == &"":
-		return DotResult.fail(
-			DotError.CODE_INVALID,
+		return GSResult.fail(
+			GSError.CODE_INVALID,
 			"A registered kind must be above %d, within the kind limit, and named." % KIND_MAX,
 			"kind=%d limit=%d" % [kind, kind_limit]
 		)
 
 	_extra_names[kind] = kind_name
 
-	return DotResult.success(kind)
+	return GSResult.success(kind)
 
 
 ## The id for a kind and a serial. The only place the layout is spelled out.
@@ -172,7 +172,7 @@ static func kind_of(id: int) -> int:
 	return kind if kind <= kind_limit else KIND_NONE
 
 
-## The serial within its kind. Unique for the life of one [DotEntityTable].
+## The serial within its kind. Unique for the life of one [GSEntityTable].
 static func serial_of(id: int) -> int:
 	return (id % STRIDE) if id > 0 else 0
 
@@ -187,7 +187,7 @@ static func is_kind(id: int, kind: int) -> bool:
 ## Whether this id names anything at all.
 ##
 ## [b]Not the same question as whether the entity is still alive[/b], which only
-## [method DotEntityTable.is_open] can answer. This one is about the number.
+## [method GSEntityTable.is_open] can answer. This one is about the number.
 static func is_valid(id: int) -> bool:
 	return kind_of(id) != KIND_NONE
 

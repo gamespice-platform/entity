@@ -16,11 +16,11 @@ id = kind * 1_000_000_000_000 + serial
 ```
 
 ```gdscript
-var id := DotEntity.make_id(DotEntity.KIND_NPC, 41)
+var id := GSEntity.make_id(GSEntity.KIND_NPC, 41)
 
-DotEntity.kind_of(id)                          # DotEntity.KIND_NPC
-DotEntity.is_kind(id, DotEntity.KIND_PLAYER)   # false
-DotEntity.describe_id(id)                      # "npc#41"
+GSEntity.kind_of(id)                          # GSEntity.KIND_NPC
+GSEntity.is_kind(id, GSEntity.KIND_PLAYER)   # false
+GSEntity.describe_id(id)                      # "npc#41"
 ```
 
 | Property | Why |
@@ -34,31 +34,31 @@ The kinds are `KIND_PLAYER`, `KIND_NPC`, `KIND_VEHICLE`, `KIND_PROP`, `KIND_PROJ
 
 ## Limits
 
-The id layout is fixed: `id = kind * 10^12 + serial`. Inside it, the limits are settings. The defaults are the old values, so a game that sets nothing behaves as before. `0` means the largest value the layout holds. A value the layout cannot hold, or a negative one, is refused with `DotError.CODE_INVALID` and changes nothing. Nothing is clamped.
+The id layout is fixed: `id = kind * 10^12 + serial`. Inside it, the limits are settings. The defaults are the old values, so a game that sets nothing behaves as before. `0` means the largest value the layout holds. A value the layout cannot hold, or a negative one, is refused with `GSError.CODE_INVALID` and changes nothing. Nothing is clamped.
 
 | Setting | Set with | Default | `0` means | Refused when |
 | --- | --- | --- | --- | --- |
-| `DotEntity.kind_limit`, the highest kind | `DotEntity.set_kind_limit(n)` | 8 | 9 223 371, the most kinds an `int64` id holds | below 8, or above 9 223 371 |
-| `DotEntityTable.serial_limit`, serials per kind | `table.set_serial_limit(n)` | 999 999 999 999 (10^12 - 1) | the same ceiling | above 10^12 - 1 |
+| `GSEntity.kind_limit`, the highest kind | `GSEntity.set_kind_limit(n)` | 8 | 9 223 371, the most kinds an `int64` id holds | below 8, or above 9 223 371 |
+| `GSEntityTable.serial_limit`, serials per kind | `table.set_serial_limit(n)` | 999 999 999 999 (10^12 - 1) | the same ceiling | above 10^12 - 1 |
 
-Kinds 9 and up are the game's own. Name them with `DotEntity.register_kind(kind, name)`, or they read as `kind9` in logs. Ids of kinds 1..8 are unchanged, so peers that disagree about `kind_limit` still agree about every id they share. Opening a kind above the limit fails with `CODE_INVALID`. Opening past `serial_limit` fails with `DotError.CODE_QUOTA` and never wraps.
+Kinds 9 and up are the game's own. Name them with `GSEntity.register_kind(kind, name)`, or they read as `kind9` in logs. Ids of kinds 1..8 are unchanged, so peers that disagree about `kind_limit` still agree about every id they share. Opening a kind above the limit fails with `CODE_INVALID`. Opening past `serial_limit` fails with `GSError.CODE_QUOTA` and never wraps.
 
 ## The table
 
 ```gdscript
-var table := DotEntityTable.new()
+var table := GSEntityTable.new()
 
-var opened := table.open(DotEntity.KIND_PLAYER, body, &"", player.userid)
+var opened := table.open(GSEntity.KIND_PLAYER, body, &"", player.userid)
 if opened.ok:
-    var handle: DotEntityHandle = opened.value
+    var handle: GSEntityHandle = opened.value
     combat.register_health(handle.id, health)
 
 # On despawn, in this order:
-table.close(handle.id, DotEntityTable.REASON_KILLED)
+table.close(handle.id, GSEntityTable.REASON_KILLED)
 combat.forget(handle.id)
 ```
 
-`open(kind, node, owner_id, key, now)` refuses a null node, a node that is already an entity, a key that already names one and an unknown kind. Each refusal is a `DotResult` you can branch on. A refusal uses no serial.
+`open(kind, node, owner_id, key, now)` refuses a null node, a node that is already an entity, a key that already names one and an unknown kind. Each refusal is a `GSResult` you can branch on. A refusal uses no serial.
 
 `close()` does not free the node. Whoever put the node in the world takes it out. Close the handle first, so a listener on `closed` can still read where the entity was.
 
@@ -70,7 +70,7 @@ combat.forget(handle.id)
 
 `sweep()` closes every handle whose node was freed without a `close()`, for example after a scene reload. It returns how many it closed and warns when that is more than zero, because it means a despawn path is not calling `close()`.
 
-`DotEntityHandle` is kept beside the node and never on it. Metadata on a node is invisible to other code, survives into saved scenes, and is gone when the node is freed, which is the tick it matters most. It holds the common fields only. A prop, an NPC or a vehicle keeps its own record and gains a handle. Everything works in 2D and 3D: `position()` and `position_2d()` both return a safe value outside the tree.
+`GSEntityHandle` is kept beside the node and never on it. Metadata on a node is invisible to other code, survives into saved scenes, and is gone when the node is freed, which is the tick it matters most. It holds the common fields only. A prop, an NPC or a vehicle keeps its own record and gains a handle. Everything works in 2D and 3D: `position()` and `position_2d()` both return a safe value outside the tree.
 
 ## What is not here
 

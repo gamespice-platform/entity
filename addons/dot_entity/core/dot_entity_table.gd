@@ -1,12 +1,12 @@
 @tool
-class_name DotEntityTable
+class_name GSEntityTable
 extends RefCounted
 
 ## Every world object a game currently knows about, and the only thing that hands out
 ## an entity id.
 ##
 ## [b]One allocator, because the alternative is what the tree already had.[/b] Four
-## games each invented an id scheme for [code]DotCombatManager[/code] and no two
+## games each invented an id scheme for [code]GSCombatManager[/code] and no two
 ## agreed; one derived monster ids from engine instance ids modulo a million, which
 ## collides in silence and costs the loser its health registration. An allocator is
 ## three fields and a counter, and it is the difference between "these numbers are
@@ -14,20 +14,20 @@ extends RefCounted
 ##
 ## [b]Two reverse indexes, because both directions are asked constantly.[/b] A trace
 ## returns a [Node] and damage is keyed by id, so node → id runs once per pellet;
-## [code]DotCombatManager[/code] already carried a hand-rolled copy of exactly this map.
+## [code]GSCombatManager[/code] already carried a hand-rolled copy of exactly this map.
 ## And a game keys its own players by name, so key → id runs on every chat line, vote
 ## and kill feed entry. Both are maintained here so neither can drift from the table.
 ##
 ## [codeblock]
-## var table := DotEntityTable.new()
+## var table := GSEntityTable.new()
 ##
-## var opened := table.open(DotEntity.KIND_PLAYER, body, &"", player.userid)
+## var opened := table.open(GSEntity.KIND_PLAYER, body, &"", player.userid)
 ## if opened.ok:
-##     var handle: DotEntityHandle = opened.value
+##     var handle: GSEntityHandle = opened.value
 ##     combat.register_health(handle.id, health)
 ##
 ## # ... later, on despawn:
-## table.close(handle.id, DotEntityTable.REASON_DESPAWN)
+## table.close(handle.id, GSEntityTable.REASON_DESPAWN)
 ## combat.forget(handle.id)
 ## [/codeblock]
 ##
@@ -38,14 +38,14 @@ extends RefCounted
 const CHANNEL := "entity"
 
 ## An entity entered the world.
-signal opened(handle: DotEntityHandle)
+signal opened(handle: GSEntityHandle)
 
 ## An entity left it. [param reason] is one of the REASON_* constants, or a game's own.
 ##
 ## [b]Emitted with the handle rather than with the id.[/b] The one moment an entity's
 ## record is most wanted is the moment it stops existing, and a listener handed only an
 ## id would have to look it up in a table that has already forgotten it.
-signal closed(handle: DotEntityHandle, reason: StringName)
+signal closed(handle: GSEntityHandle, reason: StringName)
 
 const REASON_DESPAWN := &"despawn"    ## Ordinary removal.
 const REASON_KILLED := &"killed"      ## It died.
@@ -62,12 +62,12 @@ const REASON_ORPHANED := &"orphaned"  ## Its node was freed without telling the 
 var auto_sweep: bool = false
 
 ## The most serials one kind may hand out, and a setting. [code]0[/code] means the id
-## format's own ceiling, [constant DotEntity.SERIAL_MAX]; the default is that ceiling, so
+## format's own ceiling, [constant GSEntity.SERIAL_MAX]; the default is that ceiling, so
 ## nothing changes unless a game lowers it. Set it with [method set_serial_limit], which
 ## refuses a value above the ceiling instead of clamping it.
-var serial_limit: int = DotEntity.SERIAL_MAX
+var serial_limit: int = GSEntity.SERIAL_MAX
 
-## id -> [DotEntityHandle].
+## id -> [GSEntityHandle].
 var _by_id: Dictionary = {}
 
 ## Engine instance id -> entity id. The node → entity direction.
@@ -87,20 +87,20 @@ var _next_serial: Dictionary = {}
 var _opened_total: int = 0
 
 
-## Sets [member serial_limit]. [code]0[/code] means [constant DotEntity.SERIAL_MAX]. Fails
-## with [constant DotError.CODE_INVALID], changing nothing, for a negative value or one the
+## Sets [member serial_limit]. [code]0[/code] means [constant GSEntity.SERIAL_MAX]. Fails
+## with [constant GSError.CODE_INVALID], changing nothing, for a negative value or one the
 ## id layout cannot hold.
-func set_serial_limit(limit: int) -> DotResult:
-	if limit < 0 or limit > DotEntity.SERIAL_MAX:
-		return DotResult.fail(
-			DotError.CODE_INVALID,
-			"The serial limit must be 0 (unlimited) or at most %d." % DotEntity.SERIAL_MAX,
+func set_serial_limit(limit: int) -> GSResult:
+	if limit < 0 or limit > GSEntity.SERIAL_MAX:
+		return GSResult.fail(
+			GSError.CODE_INVALID,
+			"The serial limit must be 0 (unlimited) or at most %d." % GSEntity.SERIAL_MAX,
 			"limit=%d" % limit
 		)
 
-	serial_limit = limit if limit > 0 else DotEntity.SERIAL_MAX
+	serial_limit = limit if limit > 0 else GSEntity.SERIAL_MAX
 
-	return DotResult.success(serial_limit)
+	return GSResult.success(serial_limit)
 
 
 ## Puts an entity into the table and gives it an id.
@@ -108,29 +108,29 @@ func set_serial_limit(limit: int) -> DotResult:
 ## [param key] is the game's own name for it, and may be empty. [param now] is
 ## simulated seconds; never pass a wall clock.
 ##
-## Fails with [constant DotError.CODE_INVALID] for a kind that is not one of
-## [DotEntity]'s or a node that is null, with [constant DotError.CODE_STATE] for a node
+## Fails with [constant GSError.CODE_INVALID] for a kind that is not one of
+## [GSEntity]'s or a node that is null, with [constant GSError.CODE_STATE] for a node
 ## or a key that is already in the table, and with
-## [constant DotError.CODE_QUOTA] when a kind has exhausted its serials.
+## [constant GSError.CODE_QUOTA] when a kind has exhausted its serials.
 func open(
 	kind: int,
 	node: Node,
 	owner_id: StringName = &"",
 	key: StringName = &"",
 	now: float = 0.0
-) -> DotResult:
-	if kind <= DotEntity.KIND_NONE or kind > DotEntity.kind_limit:
-		return DotResult.fail(
-			DotError.CODE_INVALID,
+) -> GSResult:
+	if kind <= GSEntity.KIND_NONE or kind > GSEntity.kind_limit:
+		return GSResult.fail(
+			GSError.CODE_INVALID,
 			"That is not an entity kind.",
 			"kind=%d" % kind
 		)
 
 	if node == null or not is_instance_valid(node):
-		return DotResult.fail(
-			DotError.CODE_INVALID,
+		return GSResult.fail(
+			GSError.CODE_INVALID,
 			"An entity needs a node.",
-			DotEntity.kind_name(kind)
+			GSEntity.kind_name(kind)
 		)
 
 	var instance_id := node.get_instance_id()
@@ -140,17 +140,17 @@ func open(
 	# the node index now answers with whichever was written last. Two health
 	# registrations for one body is a player who takes half damage.
 	if _by_instance.has(instance_id):
-		return DotResult.fail(
-			DotError.CODE_STATE,
+		return GSResult.fail(
+			GSError.CODE_STATE,
 			"That node is already an entity.",
-			DotEntity.describe_id(int(_by_instance[instance_id]))
+			GSEntity.describe_id(int(_by_instance[instance_id]))
 		)
 
 	if key != &"" and _by_key.has(key):
-		return DotResult.fail(
-			DotError.CODE_STATE,
+		return GSResult.fail(
+			GSError.CODE_STATE,
 			"That key already names an entity.",
-			"%s -> %s" % [String(key), DotEntity.describe_id(int(_by_key[key]))]
+			"%s -> %s" % [String(key), GSEntity.describe_id(int(_by_key[key]))]
 		)
 
 	var serial := int(_next_serial.get(kind, 1))
@@ -160,21 +160,21 @@ func open(
 		# busy server -- but "unreachable" is what every id scheme in this tree
 		# assumed, and one of them was wrong within a single map. A refusal a caller
 		# can see beats a silent wrap onto live ids.
-		DotLog.error(CHANNEL, "entity serials exhausted for a kind", {
-			"kind": String(DotEntity.kind_name(kind)),
+		GSLog.error(CHANNEL, "entity serials exhausted for a kind", {
+			"kind": String(GSEntity.kind_name(kind)),
 			"max": serial_limit,
 		})
 
-		return DotResult.fail(
-			DotError.CODE_QUOTA,
+		return GSResult.fail(
+			GSError.CODE_QUOTA,
 			"This kind has no entity ids left.",
-			String(DotEntity.kind_name(kind))
+			String(GSEntity.kind_name(kind))
 		)
 
 	_next_serial[kind] = serial + 1
 
-	var handle := DotEntityHandle.new()
-	handle.id = DotEntity.make_id(kind, serial)
+	var handle := GSEntityHandle.new()
+	handle.id = GSEntity.make_id(kind, serial)
 	handle.kind = kind
 	handle.node = node
 	handle.instance_id = instance_id
@@ -191,15 +191,15 @@ func open(
 
 	_opened_total += 1
 
-	DotLog.debug(CHANNEL, "entity opened", {
-		"id": DotEntity.describe_id(handle.id),
+	GSLog.debug(CHANNEL, "entity opened", {
+		"id": GSEntity.describe_id(handle.id),
 		"owner": String(owner_id),
 		"key": String(key),
 	})
 
 	opened.emit(handle)
 
-	return DotResult.success(handle)
+	return GSResult.success(handle)
 
 
 ## Takes an entity out of the table.
@@ -208,17 +208,17 @@ func open(
 ## forgets the bookkeeping. The order matters and it is this one: close the handle,
 ## then free the node, so a listener on [signal closed] can still read where it was.
 ##
-## Returns the handle on success, and fails with [constant DotError.CODE_STATE] for an
+## Returns the handle on success, and fails with [constant GSError.CODE_STATE] for an
 ## id the table does not hold — which includes one that was already closed, because
 ## serials are never reused and a stale id is therefore simply absent.
-func close(id: int, reason: StringName = REASON_DESPAWN) -> DotResult:
-	var handle: DotEntityHandle = _by_id.get(id)
+func close(id: int, reason: StringName = REASON_DESPAWN) -> GSResult:
+	var handle: GSEntityHandle = _by_id.get(id)
 
 	if handle == null:
-		return DotResult.fail(
-			DotError.CODE_STATE,
+		return GSResult.fail(
+			GSError.CODE_STATE,
 			"No such entity.",
-			DotEntity.describe_id(id)
+			GSEntity.describe_id(id)
 		)
 
 	handle.alive = false
@@ -229,14 +229,14 @@ func close(id: int, reason: StringName = REASON_DESPAWN) -> DotResult:
 	if handle.key != &"":
 		_by_key.erase(handle.key)
 
-	DotLog.debug(CHANNEL, "entity closed", {
-		"id": DotEntity.describe_id(id),
+	GSLog.debug(CHANNEL, "entity closed", {
+		"id": GSEntity.describe_id(id),
 		"reason": String(reason),
 	})
 
 	closed.emit(handle, reason)
 
-	return DotResult.success(handle)
+	return GSResult.success(handle)
 
 
 ## Closes every entity [param owner_id] is responsible for. Returns how many.
@@ -246,7 +246,7 @@ func close_owner(owner_id: StringName, reason: StringName = REASON_OWNER_LEFT) -
 	var doomed: Array[int] = []
 
 	for id: int in _by_id:
-		var handle: DotEntityHandle = _by_id[id]
+		var handle: GSEntityHandle = _by_id[id]
 
 		if handle.owner_id == owner_id:
 			doomed.append(id)
@@ -271,7 +271,7 @@ func sweep(reason: StringName = REASON_ORPHANED) -> int:
 	var doomed: Array[int] = []
 
 	for id: int in _by_id:
-		var handle: DotEntityHandle = _by_id[id]
+		var handle: GSEntityHandle = _by_id[id]
 
 		if handle.node == null or not is_instance_valid(handle.node):
 			doomed.append(id)
@@ -280,7 +280,7 @@ func sweep(reason: StringName = REASON_ORPHANED) -> int:
 		close(id, reason)
 
 	if not doomed.is_empty():
-		DotLog.warn(CHANNEL, "entities were freed without being closed", {
+		GSLog.warn(CHANNEL, "entities were freed without being closed", {
 			"count": doomed.size(),
 		})
 
@@ -301,12 +301,12 @@ func clear(reason: StringName = REASON_CLEANUP) -> int:
 
 
 ## The handle for an id, or null.
-func handle(id: int) -> DotEntityHandle:
+func handle(id: int) -> GSEntityHandle:
 	return _by_id.get(id)
 
 
 ## The handle for a node, or null.
-func handle_for_node(node: Node) -> DotEntityHandle:
+func handle_for_node(node: Node) -> GSEntityHandle:
 	if node == null or not is_instance_valid(node):
 		return null
 
@@ -314,7 +314,7 @@ func handle_for_node(node: Node) -> DotEntityHandle:
 
 
 ## The handle for a game's own key, or null.
-func handle_for_key(key: StringName) -> DotEntityHandle:
+func handle_for_key(key: StringName) -> GSEntityHandle:
 	return _by_id.get(_by_key.get(key, 0))
 
 
@@ -341,7 +341,7 @@ func id_for_key(key: StringName) -> int:
 ## of one serialisation, and the two ends of one serialisation are exactly as capable of
 ## never meeting as the two ends of a wire.
 func key_for_id(id: int) -> StringName:
-	var found: DotEntityHandle = _by_id.get(id)
+	var found: GSEntityHandle = _by_id.get(id)
 
 	return found.key if found != null else &""
 
@@ -353,7 +353,7 @@ func is_open(id: int) -> bool:
 
 ## Whether the table holds it and its node is still real.
 func is_alive(id: int) -> bool:
-	var found: DotEntityHandle = _by_id.get(id)
+	var found: GSEntityHandle = _by_id.get(id)
 
 	return found != null and found.is_alive()
 
@@ -374,7 +374,7 @@ func count_of_kind(kind: int) -> int:
 	var n := 0
 
 	for id: int in _by_id:
-		if (_by_id[id] as DotEntityHandle).kind == kind:
+		if (_by_id[id] as GSEntityHandle).kind == kind:
 			n += 1
 
 	return n
@@ -401,21 +401,21 @@ func ids_of_kind(kind: int) -> Array[int]:
 	var out: Array[int] = []
 
 	for id: int in _by_id:
-		if (_by_id[id] as DotEntityHandle).kind == kind:
+		if (_by_id[id] as GSEntityHandle).kind == kind:
 			out.append(id)
 
 	return out
 
 
 ## Every open handle of one kind.
-func handles_of_kind(kind: int) -> Array[DotEntityHandle]:
+func handles_of_kind(kind: int) -> Array[GSEntityHandle]:
 	if auto_sweep:
 		sweep()
 
-	var out: Array[DotEntityHandle] = []
+	var out: Array[GSEntityHandle] = []
 
 	for id: int in _by_id:
-		var found: DotEntityHandle = _by_id[id]
+		var found: GSEntityHandle = _by_id[id]
 
 		if found.kind == kind:
 			out.append(found)
@@ -424,14 +424,14 @@ func handles_of_kind(kind: int) -> Array[DotEntityHandle]:
 
 
 ## Every open handle one owner is responsible for.
-func handles_of_owner(owner_id: StringName) -> Array[DotEntityHandle]:
+func handles_of_owner(owner_id: StringName) -> Array[GSEntityHandle]:
 	if auto_sweep:
 		sweep()
 
-	var out: Array[DotEntityHandle] = []
+	var out: Array[GSEntityHandle] = []
 
 	for id: int in _by_id:
-		var found: DotEntityHandle = _by_id[id]
+		var found: GSEntityHandle = _by_id[id]
 
 		if found.owner_id == owner_id:
 			out.append(found)
@@ -442,11 +442,11 @@ func handles_of_owner(owner_id: StringName) -> Array[DotEntityHandle]:
 func describe() -> Dictionary:
 	var by_kind := {}
 
-	for kind in range(DotEntity.KIND_NONE + 1, DotEntity.kind_limit + 1):
+	for kind in range(GSEntity.KIND_NONE + 1, GSEntity.kind_limit + 1):
 		var n := count_of_kind(kind)
 
 		if n > 0:
-			by_kind[String(DotEntity.kind_name(kind))] = n
+			by_kind[String(GSEntity.kind_name(kind))] = n
 
 	return {
 		"open": _by_id.size(),
@@ -477,4 +477,4 @@ func describe_lines() -> PackedStringArray:
 
 
 func _to_string() -> String:
-	return "DotEntityTable(%d open, %d ever)" % [_by_id.size(), _opened_total]
+	return "GSEntityTable(%d open, %d ever)" % [_by_id.size(), _opened_total]

@@ -1,5 +1,5 @@
 @tool
-class_name DotEntityHandle
+class_name GSEntityHandle
 extends RefCounted
 
 ## One world object's record: its id, its kind, its node, and who put it there.
@@ -13,17 +13,17 @@ extends RefCounted
 ##
 ## [b]This is the common half only.[/b] A prop is held, an NPC thinks, a vehicle has
 ## seats — none of that is here, and none of it should be. Those records keep their own
-## fields and gain a handle; see [member DotEntityHandle.meta] for the small stuff and a
+## fields and gain a handle; see [member GSEntityHandle.meta] for the small stuff and a
 ## subclass for the rest.
 
-## The id. Stable for the life of the process, never reused. See [DotEntity].
+## The id. Stable for the life of the process, never reused. See [GSEntity].
 var id: int = 0
 
-## What sort of thing this is. One of [DotEntity]'s [code]KIND_*[/code].
+## What sort of thing this is. One of [GSEntity]'s [code]KIND_*[/code].
 ##
 ## Stored as well as encoded in [member id], because a comparison is cheaper than a
 ## division and this is read on every damage event.
-var kind: int = DotEntity.KIND_NONE
+var kind: int = GSEntity.KIND_NONE
 
 ## The node in the world. May be freed; check with [method is_alive].
 ##
@@ -36,7 +36,7 @@ var node: Node = null
 ## The engine's instance id for [member node]. The handle's own back-reference.
 ##
 ## [b]An int rather than the node, because a comparison against a freed [Node] is
-## undefined and an int is an int.[/b] Also what [DotEntityTable] keys its reverse
+## undefined and an int is an int.[/b] Also what [GSEntityTable] keys its reverse
 ## index on, so a node can be turned back into an entity id without a scan.
 var instance_id: int = 0
 
@@ -52,7 +52,7 @@ var owner_id: StringName = &""
 ## one that wrote the reconstruction down warned about it in a comment: a caller that
 ## hashes the name produces a number that is stable, plausible, and not the one the
 ## health and the hitboxes use. Stored once and looked up
-## ([method DotEntityTable.handle_for_key]) is the only version that cannot drift.
+## ([method GSEntityTable.handle_for_key]) is the only version that cannot drift.
 var key: StringName = &""
 
 ## Simulated seconds when it entered the world. Never a wall clock.
@@ -138,8 +138,8 @@ func position_2d() -> Vector2:
 
 func describe() -> Dictionary:
 	return {
-		"id": DotEntity.describe_id(id),
-		"kind": String(DotEntity.kind_name(kind)),
+		"id": GSEntity.describe_id(id),
+		"kind": String(GSEntity.kind_name(kind)),
 		"owner": String(owner_id) if owner_id != &"" else "-",
 		"key": String(key) if key != &"" else "-",
 		"alive": is_alive(),
@@ -148,7 +148,7 @@ func describe() -> Dictionary:
 
 
 func _to_string() -> String:
-	return "DotEntityHandle(%s%s)" % [
-		DotEntity.describe_id(id),
+	return "GSEntityHandle(%s%s)" % [
+		GSEntity.describe_id(id),
 		"" if owner_id == &"" else " by " + String(owner_id),
 	]
