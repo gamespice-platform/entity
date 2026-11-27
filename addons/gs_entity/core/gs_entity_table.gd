@@ -68,10 +68,10 @@ var auto_sweep: bool = false
 var serial_limit: int = GSEntity.SERIAL_MAX
 
 ## id -> [GSEntityHandle].
-var _by_id: Dictionary = {}
+var _by_id: Dictionary[int, GSEntityHandle] = {}
 
 ## Engine instance id -> entity id. The node → entity direction.
-var _by_instance: Dictionary = {}
+var _by_instance: Dictionary[int, int] = {}
 
 ## Game key -> entity id. The name → entity direction.
 var _by_key: Dictionary = {}
@@ -85,6 +85,9 @@ var _next_serial: Dictionary = {}
 
 ## How many ids this table has ever handed out. Diagnostics only.
 var _opened_total: int = 0
+
+## Scratch list of [method sweep], reused so a sweep with nothing to close allocates nothing.
+var _sweep_doomed: Array[int] = []
 
 
 ## Sets [member serial_limit]. [code]0[/code] means [constant GSEntity.SERIAL_MAX]. Fails
@@ -268,7 +271,8 @@ func close_owner(owner_id: StringName, reason: StringName = REASON_OWNER_LEFT) -
 ## Returns how many it closed, and warns when that is not zero: an orphan is recoverable
 ## but it means a despawn path somewhere is not calling [method close].
 func sweep(reason: StringName = REASON_ORPHANED) -> int:
-	var doomed: Array[int] = []
+	var doomed := _sweep_doomed
+	doomed.clear()
 
 	for id: int in _by_id:
 		var handle: GSEntityHandle = _by_id[id]
@@ -280,7 +284,7 @@ func sweep(reason: StringName = REASON_ORPHANED) -> int:
 		close(id, reason)
 
 	if not doomed.is_empty():
-		GSLog.warn(CHANNEL, "entities were freed without being closed", {
+		GSLog.warn(CHANNEL, "entities were freed without being closed", {  # perf-lint: allow alloc log only when something leaked
 			"count": doomed.size(),
 		})
 

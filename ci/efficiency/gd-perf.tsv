@@ -1,0 +1,12 @@
+# gd-perf
+# Baselines only shrink: scripts/<gate> --update lowers or drops entries and refuses to add.
+addons/gs_entity/core/gs_entity.gd::<members>::untyped_array	1
+addons/gs_entity/core/gs_entity_handle.gd::<members>::untyped_array	1
+addons/gs_entity/core/gs_entity_handle.gd::describe::untyped_array	1
+addons/gs_entity/core/gs_entity_table.gd::<members>::untyped_array	2
+addons/gs_entity/core/gs_entity_table.gd::describe::untyped_array	1
+addons/gs_entity/core/gs_entity_table.gd::describe_lines::untyped_array	1
+addons/gs_entity/core/gs_entity_table.gd::handles_of_kind::alloc	1
+addons/gs_entity/core/gs_entity_table.gd::handles_of_owner::alloc	1
+addons/gs_entity/core/gs_entity_table.gd::ids::alloc	1
+addons/gs_entity/core/gs_entity_table.gd::ids_of_kind::alloc	1
