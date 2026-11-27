@@ -2,6 +2,8 @@
 
 One shared id for every world object, for Godot 4.7+. It hands out the integer ids that other addons, such as gs-combat, use to key their records, and it keeps two lookups: node to id, and your own key to id. Part of the [GameSpice](https://github.com/gamespice-platform) family. It needs only [GameSpice Core](https://github.com/gamespice-platform/core).
 
+GameSpice Entity is a GameSpice addon, MIT licensed and built with Claude Code, with an offline headless self-test at `res://examples/entity_selftest.tscn`. The games in [Zee's Games](https://zeesgames.com) are built on the GameSpice addons and run on live servers, so ids are handed out there every match.
+
 Before this addon, each game invented its own ids. One used the peer id for players and a hash of the engine instance id for monsters. Two monsters could collide in silence, and the loser then stopped taking damage. GameSpice Entity is the one allocator that cannot collide.
 
 ## Install
@@ -96,9 +98,23 @@ godot --headless --path . res://examples/entity_selftest.tscn
 
 The self-test is offline and exits non-zero on any failure. It checks that ids are unique, serials never repeat, and a stale id finds nothing.
 
-## Status
+## Used by
 
-Built and maintained with Claude Code. The test suites pass, but little of this has been in front of real players yet. Please report rough edges by opening an issue.
+These games vendor it:
+
+- [Fatal Contact](https://zeesgames.com/fatal-contact)
+- [Airdrift](https://zeesgames.com/airdrift)
+- [Playlot](https://zeesgames.com/playlot)
+- [Buses From Hell](https://zeesgames.com/buses-from-hell)
+- [Smash Copter](https://zeesgames.com/smash-copter)
+- [Zombie Zone](https://zeesgames.com/zombie-zone)
+- [Hide n Seek](https://zeesgames.com/hide-n-seek)
+- [Prop Hunt](https://zeesgames.com/prop-hunt)
+- [Murder Mystery](https://zeesgames.com/murder-mystery)
+- [Deathrun](https://zeesgames.com/deathrun)
+- [Wipeout](https://zeesgames.com/wipeout)
+
+The whole collection is at [zeesgames.com](https://zeesgames.com).
 
 ## Licence
 
